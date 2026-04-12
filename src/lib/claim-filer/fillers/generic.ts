@@ -271,8 +271,8 @@ export async function fillGeneric(
         await progress.onField(slot, val, filled, totalFillable);
       }
 
-      // Small delay between fields so the user can see them appear one by one
-      await page.waitForTimeout(400);
+      // Delay between fields so the user can see them appear one by one
+      await page.waitForTimeout(800);
     } catch {
       skipped++;
     }

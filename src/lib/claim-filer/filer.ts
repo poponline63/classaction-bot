@@ -119,7 +119,8 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
 
   try {
     emitProgress({ claimId, type: 'status', message: 'Opening browser...' });
-    const browserCtx = await getContext(ctx.settlement.administrator, { headless: true });
+    // headless: false = opens a VISIBLE Chrome window so the user can watch
+    const browserCtx = await getContext(ctx.settlement.administrator, { headless: false });
     const page = await browserCtx.newPage();
 
     try {
@@ -257,8 +258,11 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
       if (!submitBtn) {
         throw new Error('submit button not found');
       }
+      emitProgress({ claimId, type: 'status', message: 'Form complete — submitting in 3 seconds...' });
+      await emitScreenshot(page, claimId, 'Form filled — about to submit');
+      // Pause so the user can see the completed form before we click submit
+      await page.waitForTimeout(3000);
       emitProgress({ claimId, type: 'status', message: 'Clicking submit...' });
-      await emitScreenshot(page, claimId, 'About to click submit');
 
       await Promise.all([
         page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => undefined),
