@@ -15,7 +15,9 @@ import fs from 'node:fs';
 export type FilerMode = 'shadow' | 'live';
 
 export function currentMode(): FilerMode {
-  return process.env.CLAIM_FILER_MODE === 'live' ? 'live' : 'shadow';
+  // Default is now LIVE — the bot actually submits claims.
+  // Set CLAIM_FILER_MODE=shadow to preview without submitting.
+  return process.env.CLAIM_FILER_MODE === 'shadow' ? 'shadow' : 'live';
 }
 
 export interface EvidencePaths {

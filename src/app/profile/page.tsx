@@ -323,7 +323,7 @@ function TabAuthorizations() {
 function TabSettings() {
   const [webhook, setWebhook] = useState('');
   const [hibp, setHibp] = useState('');
-  const [mode, setMode] = useState('shadow');
+  const [mode, setMode] = useState('live');
   const [maxDay, setMaxDay] = useState('20');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);

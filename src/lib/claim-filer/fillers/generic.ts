@@ -192,14 +192,40 @@ export interface FillResult {
   skipped: number;
 }
 
-// Fill the form. Returns the plan (so the filer can dump it into the
-// screenshot triad for auditing).
+export interface FillProgressCallback {
+  onField: (slot: Slot, value: string, filled: number, total: number) => Promise<void>;
+}
+
+const FRIENDLY_SLOT_NAMES: Record<Slot, string> = {
+  firstName: 'First Name',
+  lastName: 'Last Name',
+  fullName: 'Full Name',
+  email: 'Email',
+  phone: 'Phone',
+  address1: 'Street Address',
+  address2: 'Address Line 2',
+  city: 'City',
+  state: 'State',
+  zip: 'Zip Code',
+  country: 'Country',
+  dob: 'Date of Birth',
+};
+
+// Fill the form field by field, emitting progress after each one.
 export async function fillGeneric(
   page: Page,
   profile: Profile | null,
+  progress?: FillProgressCallback,
 ): Promise<FillResult> {
   const values = buildSlotValues(profile);
   const fields = await enumerateFields(page);
+
+  // Count fillable fields first so we can show "3 of 8"
+  let totalFillable = 0;
+  for (const f of fields) {
+    const slot = matchSlot(f);
+    if (slot && values[slot]) totalFillable++;
+  }
 
   const plans: FillPlan[] = [];
   let filled = 0;
@@ -219,7 +245,6 @@ export async function fillGeneric(
     try {
       const loc: Locator = page.locator(f.selector).first();
       if (f.isSelect) {
-        // try value then label
         try {
           await loc.selectOption({ value: val });
         } catch {
@@ -240,6 +265,14 @@ export async function fillGeneric(
         strategy: f.labelText ? 'label' : f.placeholder ? 'placeholder' : f.autocomplete ? 'autocomplete' : 'name',
         selector: f.selector,
       });
+
+      // Emit progress after each field — the viewer shows this in real-time
+      if (progress) {
+        await progress.onField(slot, val, filled, totalFillable);
+      }
+
+      // Small delay between fields so the user can see them appear one by one
+      await page.waitForTimeout(400);
     } catch {
       skipped++;
     }
@@ -247,3 +280,5 @@ export async function fillGeneric(
 
   return { plans, filled, skipped };
 }
+
+export { FRIENDLY_SLOT_NAMES };

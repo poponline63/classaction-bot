@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { currentUserId } from '@lib/auth/current-user';
 import { runFileClaim } from '../../actions';
+import LiveViewer from './LiveViewer';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,13 +156,8 @@ export default async function ClaimDetailPage({
         </div>
       </div>
 
-      {/* Retry button for non-failed states */}
-      {canRetry && !isFailed && (
-        <form action={runFileClaim} style={{ marginTop: 12 }}>
-          <input type="hidden" name="claimId" value={claim.id} />
-          <button className="btn" type="submit">🔄 Retry this claim</button>
-        </form>
-      )}
+      {/* Live viewer — lets users watch the bot fill and submit the form */}
+      <LiveViewer claimId={claim.id} initialStatus={claim.status} />
 
       {/* Settlement link */}
       <div className="card" style={{ marginTop: 12 }}>

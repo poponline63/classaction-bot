@@ -28,7 +28,7 @@ import {
   type PreflightContext,
 } from './preflight';
 import { getContext } from './browser-pool';
-import { fillGeneric } from './fillers/generic';
+import { fillGeneric, FRIENDLY_SLOT_NAMES } from './fillers/generic';
 import { captureAttestation } from './attestation-capture';
 import {
   captureEmptyForm,
@@ -39,6 +39,7 @@ import {
   extractConfirmationId,
   type FilerMode,
 } from './submit';
+import { emitProgress, emitScreenshot } from './progress';
 import { notifyClaimFiled, notifyClaimFailed } from '@lib/notifier/discord';
 
 export interface FilerResult {
@@ -117,6 +118,7 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
   let attestationText: string | null = null;
 
   try {
+    emitProgress({ claimId, type: 'status', message: 'Opening browser...' });
     const browserCtx = await getContext(ctx.settlement.administrator, { headless: true });
     const page = await browserCtx.newPage();
 
@@ -124,6 +126,8 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
       if (!ctx.settlement.claimFormUrl) {
         throw new Error('claim form url missing at fill time');
       }
+
+      emitProgress({ claimId, type: 'status', message: `Navigating to claim form...` });
       await page.goto(ctx.settlement.claimFormUrl, {
         waitUntil: 'domcontentloaded',
         timeout: 45_000,
@@ -132,9 +136,9 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
 
       // Screenshot 1 — empty form
       emptyPath = await captureEmptyForm(page, claimId);
+      await emitScreenshot(page, claimId, 'Empty form loaded');
 
-      // Load profile for the filler (preflight doesn't pass this through
-      // since it doesn't need it for the legal check)
+      // Load profile
       const profileRows = await db
         .select()
         .from(schema.profile)
@@ -142,8 +146,27 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
         .limit(1);
       const profile = profileRows[0] ?? null;
 
-      // Fill generic slots
-      const fillResult = await fillGeneric(page, profile);
+      emitProgress({ claimId, type: 'status', message: 'Filling out the form...' });
+
+      // Fill generic slots WITH progress callbacks
+      const fillResult = await fillGeneric(page, profile, {
+        onField: async (slot, value, filled, total) => {
+          const friendlyName = FRIENDLY_SLOT_NAMES[slot] ?? slot;
+          emitProgress({
+            claimId,
+            type: 'field',
+            message: `Typing ${friendlyName}...`,
+            fieldName: friendlyName,
+            fieldValue: slot === 'email' ? value.replace(/(.{2}).*(@.*)/, '$1***$2') : value,
+            filledCount: filled,
+            totalFields: total,
+          });
+          // Take a screenshot after every 2 fields so viewer sees progress
+          if (filled % 2 === 0 || filled === total) {
+            await emitScreenshot(page, claimId, `Filled ${filled} of ${total} fields`);
+          }
+        },
+      });
       console.log(
         `[filer] filled ${fillResult.filled}/${fillResult.filled + fillResult.skipped} fields`,
       );
@@ -151,16 +174,18 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
 
       // Screenshot 2 — filled form
       filledPath = await captureFilledForm(page, claimId);
+      await emitScreenshot(page, claimId, 'All fields filled');
 
       // ---------- Attestation capture (legally critical) ----------
+      emitProgress({ claimId, type: 'status', message: 'Finding attestation checkbox...' });
       const attestation = await captureAttestation(page);
       if (!attestation.checkboxFound) {
-        // Abort — cannot verify what the user is agreeing to.
         throw new Error(
           `attestation capture failed (source=${attestation.source}) — refusing to submit`,
         );
       }
       attestationText = attestation.text;
+      emitProgress({ claimId, type: 'status', message: 'Attestation found — preparing to submit' });
 
       // Persist submitted data + attestation snapshot BEFORE clicking submit
       await db
@@ -198,6 +223,7 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
           confirmationId: null,
           payoutEstimate: ctx.settlement.payoutEstimate,
         }).catch(() => undefined);
+        emitProgress({ claimId, type: 'done', message: 'Claim submitted in preview mode! Switch to Live mode to actually submit.' });
         return {
           claimId,
           mode,
@@ -210,6 +236,7 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
       }
 
       // ---------- LIVE: click the attestation checkbox, then submit ----------
+      emitProgress({ claimId, type: 'status', message: 'Checking attestation box...' });
       if (attestation.selector) {
         try {
           await page.locator(attestation.selector).first().check({ force: false });
@@ -225,10 +252,13 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
         }
       }
 
+      emitProgress({ claimId, type: 'status', message: 'Looking for submit button...' });
       const submitBtn = await findSubmitButton(page);
       if (!submitBtn) {
         throw new Error('submit button not found');
       }
+      emitProgress({ claimId, type: 'status', message: 'Clicking submit...' });
+      await emitScreenshot(page, claimId, 'About to click submit');
 
       await Promise.all([
         page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => undefined),
@@ -236,8 +266,10 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
       ]);
       await page.waitForTimeout(2000);
 
+      emitProgress({ claimId, type: 'status', message: 'Waiting for confirmation...' });
       confirmationId = await extractConfirmationId(page);
       confirmPath = await captureConfirmation(page, claimId);
+      await emitScreenshot(page, claimId, confirmationId ? `Confirmed! #${confirmationId}` : 'Submitted — checking for confirmation');
 
       await db
         .update(schema.claims)
@@ -261,6 +293,7 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
         confirmationId,
         payoutEstimate: ctx.settlement.payoutEstimate,
       }).catch(() => undefined);
+      emitProgress({ claimId, type: 'done', message: confirmationId ? `Claim submitted! Confirmation: ${confirmationId}` : 'Claim submitted successfully!' });
 
       return {
         claimId,
