@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, schema } from '@db/client';
 import { eq } from 'drizzle-orm';
 import { currentUserId } from '@lib/auth/current-user';
+import { triggerAutoPipeline } from '@lib/auto-pipeline';
 
 export async function POST(req: Request) {
   const userId = await currentUserId();
@@ -27,5 +28,6 @@ export async function POST(req: Request) {
       userId, legalName, dateOfBirth: dob ? new Date(dob) : null, emailsJson: emails, phonesJson: phones, addressesJson: addresses as never,
     });
   }
+  triggerAutoPipeline(userId);
   return NextResponse.json({ ok: true });
 }

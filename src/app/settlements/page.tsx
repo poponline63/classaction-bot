@@ -48,7 +48,8 @@ const FRIENDLY_CATEGORIES: Record<string, string> = {
 
 export default async function SettlementsPage({ searchParams }: { searchParams: SearchParams }) {
   const userId = await currentUserId();
-  const showFilter = searchParams.show ?? 'all';
+  // Default to "eligible" so users see what's relevant, not 200 random ones
+  const showFilter = searchParams.show ?? 'eligible';
 
   const where: SQL[] = [];
   if (searchParams.category && searchParams.category !== 'all') {

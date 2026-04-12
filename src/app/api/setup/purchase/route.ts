@@ -4,6 +4,7 @@ import type { SettlementCategory } from '@db/schema';
 import { SETTLEMENT_CATEGORIES } from '@db/schema';
 import { currentUserId } from '@lib/auth/current-user';
 import { normalizeDefendant } from '@lib/scraper/normalize';
+import { triggerAutoPipeline } from '@lib/auto-pipeline';
 
 export async function POST(req: Request) {
   const userId = await currentUserId();
@@ -20,5 +21,6 @@ export async function POST(req: Request) {
   await db.insert(schema.purchases).values({
     userId, merchant, merchantNormalized: normalizeDefendant(merchant), productName, category, purchaseDate: new Date(purchaseDate), amount, source: 'manual',
   });
+  triggerAutoPipeline(userId);
   return NextResponse.json({ ok: true });
 }

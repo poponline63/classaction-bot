@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, schema } from '@db/client';
 import { currentUserId } from '@lib/auth/current-user';
+import { triggerAutoPipeline } from '@lib/auto-pipeline';
 
 export async function POST(req: Request) {
   const userId = await currentUserId();
@@ -14,5 +15,6 @@ export async function POST(req: Request) {
   await db.insert(schema.dataBreachExposure).values({
     userId, breachName, email, breachDate: breachDate ? new Date(breachDate) : null, source: 'manual', dataClassesJson: [],
   }).onConflictDoNothing();
+  triggerAutoPipeline(userId);
   return NextResponse.json({ ok: true });
 }
