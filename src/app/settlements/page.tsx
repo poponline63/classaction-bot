@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { currentUserId } from '@lib/auth/current-user';
 import { queueClaimFromMatch } from '../actions';
 import SearchBar from './SearchBar';
+import FileAllButton from '../FileAllButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,9 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
       <p className="subtitle">
         {settlements.length} settlements tracked — {eligibleCount} you qualify for
       </p>
+
+      {/* File all eligible button */}
+      {eligibleCount > 0 && <FileAllButton eligible={eligibleCount} />}
 
       <SearchBar />
 

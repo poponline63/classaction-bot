@@ -286,6 +286,7 @@ function StepAutoSignUp({ next, back, saving, submitForm }: any) {
   const enrollAll = async () => {
     setEnrolling(true);
     let n = 0;
+    const categories = new Set<string>();
     for (const item of AUTO_SIGNUPS) {
       const dateStr = item.period?.split(' to ')[0] ?? '2020-01-01';
       await submitForm('/api/setup/purchase', {
@@ -295,8 +296,15 @@ function StepAutoSignUp({ next, back, saving, submitForm }: any) {
         purchaseDate: dateStr,
         amount: '',
       });
+      categories.add(item.category);
       n++;
     }
+    // Auto-enable authorizations for all categories we just added
+    await fetch('/api/setup/auto-authorize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categories: [...categories] }),
+    });
     setCount(n);
     setEnrolled(true);
     setEnrolling(false);
@@ -387,6 +395,7 @@ function StepQuickPick({ next, back, saving, submitForm }: any) {
 
   const saveSelected = async () => {
     let count = 0;
+    const categories = new Set<string>();
     for (const i of checked) {
       const rec = RECOMMENDED[i];
       if (!rec) continue;
@@ -395,6 +404,7 @@ function StepQuickPick({ next, back, saving, submitForm }: any) {
         const cat = rec.category === 'purchase' ? 'CONSUMER_PRODUCT_PURCHASE'
           : rec.category === 'subscription' ? 'SUBSCRIPTION_SERVICE'
           : rec.category === 'auto' ? 'AUTO_DEFECT'
+          : rec.category === 'breach' ? 'DATA_BREACH'
           : 'CONSUMER_PRODUCT_PURCHASE';
         await submitForm('/api/setup/purchase', {
           merchant: rec.merchant,
@@ -403,6 +413,7 @@ function StepQuickPick({ next, back, saving, submitForm }: any) {
           purchaseDate: dateStr,
           amount: '',
         });
+        categories.add(cat);
         count++;
       }
       if (rec.breachName) {
@@ -411,8 +422,17 @@ function StepQuickPick({ next, back, saving, submitForm }: any) {
           email: '(check your email)',
           breachDate: '',
         });
+        categories.add('DATA_BREACH');
         count++;
       }
+    }
+    // Auto-enable authorizations for all categories selected
+    if (categories.size > 0) {
+      await fetch('/api/setup/auto-authorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: [...categories] }),
+      });
     }
     setSavedCount(count);
   };

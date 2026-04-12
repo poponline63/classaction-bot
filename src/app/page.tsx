@@ -3,6 +3,7 @@ import { db, schema } from '@db/client';
 import { ensureSingleUser } from '@db/seed';
 import { eq, count, and, desc } from 'drizzle-orm';
 import { getSetting } from '@lib/settings';
+import FileAllButton from './FileAllButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,11 @@ export default async function DashboardPage() {
 
       <h1>Dashboard</h1>
       <p className="subtitle">ClaimBot is working for you around the clock</p>
+
+      {/* File All button */}
+      {eligibleMatches > 0 && (
+        <FileAllButton eligible={eligibleMatches} />
+      )}
 
       {/* Stats */}
       <div className="stats-grid">

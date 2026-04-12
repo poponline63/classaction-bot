@@ -7,8 +7,45 @@ import { runFileClaim } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
+const FRIENDLY_STATUS: Record<string, { label: string; icon: string; color: string; desc: string }> = {
+  QUEUED: { label: 'Waiting to be filed', icon: '⏳', color: 'var(--text-secondary)', desc: 'This claim is in the queue and will be filed automatically.' },
+  PREFLIGHT: { label: 'Checking eligibility', icon: '🔍', color: 'var(--blue)', desc: 'We\'re verifying your eligibility one more time before filing.' },
+  FILING: { label: 'Filing your claim', icon: '📝', color: 'var(--blue)', desc: 'We\'re filling out and submitting the claim form right now.' },
+  FILED: { label: 'Claim submitted!', icon: '✅', color: 'var(--accent)', desc: 'Your claim has been submitted. You\'ll receive payment when the settlement pays out.' },
+  FAILED: { label: 'Needs attention', icon: '⚠️', color: 'var(--warn)', desc: 'Something went wrong. You can retry or we\'ll try again automatically.' },
+  ABORTED: { label: 'Could not file', icon: '❌', color: 'var(--bad)', desc: '' },
+  PAID: { label: 'Payment received!', icon: '💰', color: 'var(--accent)', desc: 'You\'ve been paid for this claim.' },
+};
+
+// Translate technical abort reasons into plain English
+const ABORT_EXPLANATIONS: Record<string, string> = {
+  AUTHORIZATION_DISABLED: 'The category authorization for this type of settlement is turned off. Go to My Profile → Authorizations to enable it, then retry.',
+  AUTHORIZATION_REVOKED: 'The category authorization was revoked. Go to My Profile → Authorizations to re-enable it, then retry.',
+  AUTHORIZATION_NOT_FOUND: 'No authorization found for this settlement category. Go to My Profile → Authorizations to enable it, then retry.',
+  CATEGORY_MISMATCH: 'The authorization category doesn\'t match this settlement. This usually fixes itself if you enable the correct category in My Profile → Authorizations.',
+  DEADLINE_PASSED: 'The claim deadline has passed — this settlement is no longer accepting claims.',
+  PROOF_REQUIRED: 'This settlement requires proof of purchase (receipts, etc.) which we can\'t auto-file yet.',
+  NO_CLAIM_FORM_URL: 'We couldn\'t find a claim form for this settlement. It may not be available yet.',
+  MATCHER_VERDICT_NOT_ELIGIBLE: 'After re-checking your profile, it looks like you may not qualify for this settlement anymore. Check that your purchases and profile info are up to date.',
+  MATCHER_CONFIDENCE_TOO_LOW: 'We\'re not confident enough that you qualify. Add more details to your profile to improve the match.',
+  RATE_LIMIT_EXCEEDED: 'Too many claims filed today. This claim will be filed tomorrow automatically.',
+  CLAIM_NOT_FOUND: 'Claim record not found. This is unusual — try filing again.',
+  CLAIM_NOT_QUEUED: 'This claim has already been processed.',
+  SETTLEMENT_NOT_FOUND: 'Settlement record not found. This is unusual.',
+  MATCH_NOT_FOUND: 'Match record not found. Try running the matcher again from the dashboard.',
+};
+
+function getAbortExplanation(error: string | null): string {
+  if (!error) return 'An unknown error occurred.';
+  for (const [key, explanation] of Object.entries(ABORT_EXPLANATIONS)) {
+    if (error.includes(key)) return explanation;
+  }
+  return error;
+}
+
 function fmtDate(d: Date | null | undefined) {
-  return d ? d.toISOString() : '—';
+  if (!d) return '—';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 export default async function ClaimDetailPage({
@@ -40,112 +77,102 @@ export default async function ClaimDetailPage({
   if (!row) notFound();
 
   const { claim, settlement, match, auth } = row;
-
-  const audit = await db
-    .select()
-    .from(schema.auditLog)
-    .where(
-      and(
-        eq(schema.auditLog.entityType, 'claim'),
-        eq(schema.auditLog.entityId, claim.id),
-      ),
-    )
-    .orderBy(desc(schema.auditLog.occurredAt));
+  const status = FRIENDLY_STATUS[claim.status] ?? FRIENDLY_STATUS.QUEUED!;
+  const isFailed = claim.status === 'FAILED' || claim.status === 'ABORTED';
+  const canRetry = isFailed || claim.status === 'QUEUED';
 
   return (
     <>
       <p className="small">
-        <Link href="/claims">&larr; Back to claims</Link>
+        <Link href="/claims">← Back to my claims</Link>
       </p>
-      <h1>
-        Claim #{claim.id}{' '}
-        <span className={`tag ${
-          claim.status === 'FILED' ? 'good' : claim.status === 'FAILED' || claim.status === 'ABORTED' ? 'bad' : ''
-        }`}>
-          {claim.status}
-        </span>
-      </h1>
-      <p className="muted small">{settlement.caseName}</p>
 
-      <div className="card">
-        <div className="meta">
-          <span><b>Queued:</b> {fmtDate(claim.queuedAt)}</span>
-          <span><b>Filed:</b> {fmtDate(claim.filedAt)}</span>
-          <span><b>Confirmation:</b> {claim.confirmationId ?? '—'}</span>
-          <span><b>Retries:</b> {claim.retryCount}</span>
-        </div>
-      </div>
-
-      <h2>Authorization used</h2>
-      <div className="card">
-        <div className="meta">
-          <span><b>Category:</b> {auth.category}</span>
-          <span><b>Version:</b> {auth.attestationVersion}</span>
-          <span><b>Enabled:</b> {auth.enabled ? 'yes' : 'no'}</span>
-          <span><b>Authorized at:</b> {fmtDate(auth.authorizedAt)}</span>
-        </div>
-        <p style={{ fontSize: 12, marginTop: 8 }} className="muted">
-          {auth.attestationText}
-        </p>
-      </div>
-
-      <h2>Submitted attestation (verbatim from DOM)</h2>
-      <div className="card">
-        {claim.submittedAttestationText ? (
-          <p style={{ fontSize: 13 }}>{claim.submittedAttestationText}</p>
-        ) : (
-          <p className="muted small">No attestation captured yet — claim has not reached the attestation step.</p>
-        )}
-      </div>
-
-      <h2>Screenshots</h2>
-      <div className="card small">
-        <p>Empty form: <code>{claim.screenshotEmptyFormPath ?? '—'}</code></p>
-        <p>Filled form: <code>{claim.screenshotFilledFormPath ?? '—'}</code></p>
-        <p>Confirmation: <code>{claim.screenshotConfirmationPath ?? '—'}</code></p>
-      </div>
-
-      {claim.lastError ? (
-        <>
-          <h2>Last error</h2>
-          <div className="card">
-            <p className="small" style={{ color: 'var(--bad)' }}>{claim.lastError}</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+        <div>
+          <h1 style={{ marginBottom: 2 }}>{settlement.caseName}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <span style={{ fontSize: 24 }}>{status.icon}</span>
+            <span style={{ fontWeight: 700, color: status.color, fontSize: 16 }}>{status.label}</span>
           </div>
-        </>
-      ) : null}
-
-      <h2>Match reasoning</h2>
-      <div className="card small">
-        <p>Verdict at queue time: <span className={`tag verdict-${match.verdict}`}>{match.verdict} ({match.confidence.toFixed(2)})</span></p>
-      </div>
-
-      <h2>Audit trail</h2>
-      <div className="card small">
-        {audit.length === 0 ? (
-          <p className="muted">No events.</p>
-        ) : (
-          <ul>
-            {audit.map((a) => (
-              <li key={a.id}>
-                <code>{a.occurredAt.toISOString()}</code> — <b>{a.eventType}</b>{' '}
-                <span className="muted">by {a.actor}</span>
-              </li>
-            ))}
-          </ul>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>{status.desc}</p>
+        </div>
+        {settlement.payoutEstimate && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Estimated payout</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)' }}>{settlement.payoutEstimate}</div>
+          </div>
         )}
       </div>
 
-      {(claim.status === 'QUEUED' ||
-        claim.status === 'PREFLIGHT' ||
-        claim.status === 'FAILED' ||
-        claim.status === 'ABORTED') ? (
-        <form action={runFileClaim} style={{ marginTop: 16 }}>
+      {/* Error explanation for aborted/failed claims */}
+      {isFailed && claim.lastError && (
+        <div className="card" style={{
+          borderColor: 'var(--bad)',
+          background: 'var(--bad-bg)',
+          marginBottom: 16,
+        }}>
+          <h3 style={{ color: 'var(--bad)', fontSize: 15, marginBottom: 6 }}>
+            {claim.status === 'ABORTED' ? '❌ Why this claim couldn\'t be filed' : '⚠️ What went wrong'}
+          </h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            {getAbortExplanation(claim.lastError)}
+          </p>
+          {canRetry && (
+            <form action={runFileClaim} style={{ marginTop: 12 }}>
+              <input type="hidden" name="claimId" value={claim.id} />
+              <button className="btn" type="submit">🔄 Try again</button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div className="card">
+        <h3 style={{ marginBottom: 12 }}>Timeline</h3>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span style={{ fontSize: 14 }}>📋</span>
+            <span style={{ fontSize: 13 }}><b>Queued:</b> {fmtDate(claim.queuedAt)}</span>
+          </div>
+          {claim.filedAt && (
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 14 }}>✅</span>
+              <span style={{ fontSize: 13 }}><b>Filed:</b> {fmtDate(claim.filedAt)}</span>
+            </div>
+          )}
+          {claim.confirmationId && (
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 14 }}>🔖</span>
+              <span style={{ fontSize: 13 }}><b>Confirmation #:</b> {claim.confirmationId}</span>
+            </div>
+          )}
+          {claim.paidAt && (
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 14 }}>💰</span>
+              <span style={{ fontSize: 13 }}><b>Paid:</b> {fmtDate(claim.paidAt)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Retry button for non-failed states */}
+      {canRetry && !isFailed && (
+        <form action={runFileClaim} style={{ marginTop: 12 }}>
           <input type="hidden" name="claimId" value={claim.id} />
-          <button className="btn" type="submit">
-            Run filer now
-          </button>
+          <button className="btn" type="submit">🔄 Retry this claim</button>
         </form>
-      ) : null}
+      )}
+
+      {/* Settlement link */}
+      <div className="card" style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3>Settlement details</h3>
+            <p className="muted small">{settlement.classDefinition.slice(0, 200)}</p>
+          </div>
+          <Link href={`/settlements/${settlement.id}`} className="btn ghost sm">View settlement</Link>
+        </div>
+      </div>
     </>
   );
 }
