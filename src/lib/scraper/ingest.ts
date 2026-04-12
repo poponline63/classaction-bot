@@ -105,6 +105,8 @@ export async function runIngest(): Promise<IngestResult> {
         await db
           .update(schema.settlements)
           .set({
+            defendant: n.defendant,
+            defendantAliases: n.defendantAliases,
             deadline: n.deadline ?? null,
             claimFormUrl: n.claimFormUrl ?? existing.claimFormUrl,
             payoutEstimate: n.payoutEstimate ?? existing.payoutEstimate,

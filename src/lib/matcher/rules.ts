@@ -34,10 +34,20 @@ function ms(d: Date | null | undefined): number | null {
 }
 
 // Alias set for a defendant: normalized name + normalized aliases.
+// Also splits comma/slash-separated defendants into individual names,
+// so "Hyundai, Kia" generates aliases for both "hyundai" and "kia".
 function defendantAliasSet(settlementDefendant: string, aliases: string[]): Set<string> {
   const out = new Set<string>();
   const n = normalizeDefendant(settlementDefendant);
   if (n) out.add(n);
+
+  // Split on comma, slash, " and ", " & " to handle multi-brand defendants
+  const parts = settlementDefendant.split(/[,/]|\band\b|&/i);
+  for (const part of parts) {
+    const np = normalizeDefendant(part.trim());
+    if (np && np.length >= 2) out.add(np);
+  }
+
   for (const a of aliases ?? []) {
     const na = normalizeDefendant(a);
     if (na) out.add(na);

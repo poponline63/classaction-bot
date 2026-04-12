@@ -40,11 +40,30 @@ function parseDateOrNull(text: string | undefined): Date | null {
 
 // Derive defendant from a case name like "RevitaLash Serum Class Action Settlement"
 function extractDefendant(caseName: string): string {
-  return caseName
+  let name = caseName
+    // Strip common suffixes first
     .replace(/\bclass action\b.*$/i, '')
     .replace(/\bsettlement\b.*$/i, '')
-    .replace(/\bunwanted calls\b.*$/i, '')
     .trim();
+
+  // Strip the description after " - " (e.g., "Hyundai, Kia - Vehicle Theft" → "Hyundai, Kia")
+  // Only if there's meaningful text before the dash (at least 2 chars)
+  const dashIdx = name.indexOf(' - ');
+  if (dashIdx > 2) {
+    name = name.slice(0, dashIdx).trim();
+  }
+
+  // Strip other common descriptors that aren't part of the company name
+  name = name
+    .replace(/\bunwanted (calls|texts)\b.*$/i, '')
+    .replace(/\bdata (breach|privacy)\b.*$/i, '')
+    .replace(/\b(employee|labor) wages?\b.*$/i, '')
+    .replace(/\bjob (postings?|application)\b.*$/i, '')
+    .replace(/\boverdraft fees?\b.*$/i, '')
+    .replace(/\bCOVID\b.*$/i, '')
+    .trim();
+
+  return name;
 }
 
 export function parseCard(
