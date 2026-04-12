@@ -2,6 +2,7 @@ import { db, schema } from '@db/client';
 import { SETTLEMENT_CATEGORIES, type SettlementCategory, type SettlementStatus } from '@db/schema';
 import { and, desc, eq, gte, type SQL } from 'drizzle-orm';
 import Link from 'next/link';
+import SearchBar from './SearchBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,8 @@ export default async function SettlementsPage({
     <>
       <h1>Settlements</h1>
       <p className="muted small">{rows.length} results (max 200)</p>
+
+      <SearchBar />
 
       <form className="filter-bar" method="get">
         <select name="category" defaultValue={searchParams.category ?? 'all'}>
