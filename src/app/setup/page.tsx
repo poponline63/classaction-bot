@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { SETTLEMENT_CATEGORIES } from '@db/schema';
 
-const STEPS = ['Welcome', 'Profile', 'Quick Pick', 'Purchases', 'Breaches', 'Authorizations', 'Done'];
+const STEPS = ['Welcome', 'Profile', 'Auto Sign-Up', 'Quick Pick', 'Purchases', 'Breaches', 'Authorizations', 'Done'];
 
 const DEFAULT_ATTESTATIONS: Record<string, string> = {
   CONSUMER_PRODUCT_PURCHASE: 'I certify under penalty of perjury that I purchased the listed products during the relevant class periods.',
@@ -15,6 +15,93 @@ const DEFAULT_ATTESTATIONS: Record<string, string> = {
   AUTO_DEFECT: 'I certify under penalty of perjury that I owned or leased the listed vehicles during the relevant periods.',
   EMPLOYMENT: 'I certify under penalty of perjury that I was employed by the listed employers during the relevant periods.',
 };
+
+// ─── Auto sign-up: settlements almost EVERYONE qualifies for ───────────────
+// These have extremely broad class definitions (bought beef, used Android,
+// used a Visa/MC/Discover card, etc.) — no specific receipt needed.
+interface AutoSignUp {
+  name: string;
+  payout: string;
+  why: string;
+  formUrl: string;
+  merchant: string;
+  category: string;
+  period?: string;
+}
+
+const AUTO_SIGNUPS: AutoSignUp[] = [
+  {
+    name: 'Beef Overcharge Settlement',
+    payout: 'varies',
+    why: 'You bought beef between Aug 2014 - Dec 2019 in the US to feed yourself, family, or friends. Almost everyone qualifies.',
+    formUrl: 'https://www.overchargedforbeef.com/en',
+    merchant: 'Beef Products',
+    category: 'CONSUMER_PRODUCT_PURCHASE',
+    period: '2014-08-01 to 2019-12-31',
+  },
+  {
+    name: 'American Express Antitrust (Visa/MC/Discover users)',
+    payout: 'varies',
+    why: 'You used a Visa/MC debit card or Visa/MC/Discover non-rewards credit card to make a purchase between 2015-2022.',
+    formUrl: 'https://amexantitrust.com/',
+    merchant: 'Visa/Mastercard/Discover',
+    category: 'CONSUMER_PRODUCT_PURCHASE',
+    period: '2015-01-01 to 2022-12-31',
+  },
+  {
+    name: 'Google Android Data Settlement',
+    payout: 'varies',
+    why: 'You used an Android phone to access the internet via cellular data between Nov 2017 - present.',
+    formUrl: 'https://www.federalcellularclassaction.com/home',
+    merchant: 'Google Android',
+    category: 'CONSUMER_PRODUCT_PURCHASE',
+    period: '2017-11-12 to 2026-12-31',
+  },
+  {
+    name: 'Amazon Prime FTC Settlement',
+    payout: '$51',
+    why: 'You had Amazon Prime between Jun 2019 - Jun 2025 and may have been enrolled without clear consent.',
+    formUrl: 'https://www.subscriptionmembershipsettlement.com/',
+    merchant: 'Amazon Prime',
+    category: 'SUBSCRIPTION_SERVICE',
+    period: '2019-06-22 to 2025-06-22',
+  },
+  {
+    name: 'Google Play Store Subscriptions',
+    payout: '$5.85',
+    why: 'You paid for ANY Google subscription renewal (apps, games, YouTube) between May 2014 - Oct 2019.',
+    formUrl: 'https://playstoresubscriptionsettlement.com/',
+    merchant: 'Google Play',
+    category: 'SUBSCRIPTION_SERVICE',
+    period: '2014-05-29 to 2019-10-26',
+  },
+  {
+    name: 'Sprouts Receipts Settlement',
+    payout: 'varies',
+    why: 'You used a credit/debit card at a Sprouts grocery store in the US and had too many digits printed on the receipt.',
+    formUrl: 'https://www.settleinfo.com/',
+    merchant: 'Sprouts Farmers Market',
+    category: 'CONSUMER_PRODUCT_PURCHASE',
+  },
+  {
+    name: 'Ideal Image Consultation',
+    payout: '$17',
+    why: 'You used IdealImage.com to schedule a consultation between Jan 2023 - Jan 2026.',
+    formUrl: 'https://www.idealimagesettlement.com/',
+    merchant: 'Ideal Image',
+    category: 'CONSUMER_PRODUCT_PURCHASE',
+    period: '2023-01-01 to 2026-01-25',
+  },
+  {
+    name: 'Dapper Labs (NBA Top Shot, Disney Pinnacle)',
+    payout: '$5',
+    why: 'You had an account on NFL All Day, Disney Pinnacle, UFC Strike, or NBA Top Shot between Jun 2020 - Jan 2025.',
+    formUrl: 'https://dappervppaclassactionsettlement.com/',
+    merchant: 'Dapper Labs',
+    category: 'CONSUMER_PRODUCT_PURCHASE',
+    period: '2020-06-14 to 2025-01-29',
+  },
+];
 
 // ─── Recommended settlements most people qualify for ───────────────────────
 interface Recommendation {
@@ -116,11 +203,12 @@ export default function SetupPage() {
 
         {step === 0 && <StepWelcome next={next} />}
         {step === 1 && <StepProfile next={next} back={back} saving={saving} submitForm={submitForm} />}
-        {step === 2 && <StepQuickPick next={next} back={back} saving={saving} submitForm={submitForm} />}
-        {step === 3 && <StepPurchases next={next} back={back} saving={saving} submitForm={submitForm} />}
-        {step === 4 && <StepBreaches next={next} back={back} saving={saving} submitForm={submitForm} />}
-        {step === 5 && <StepAuthorizations next={next} back={back} saving={saving} submitForm={submitForm} />}
-        {step === 6 && <StepDone />}
+        {step === 2 && <StepAutoSignUp next={next} back={back} saving={saving} submitForm={submitForm} />}
+        {step === 3 && <StepQuickPick next={next} back={back} saving={saving} submitForm={submitForm} />}
+        {step === 4 && <StepPurchases next={next} back={back} saving={saving} submitForm={submitForm} />}
+        {step === 5 && <StepBreaches next={next} back={back} saving={saving} submitForm={submitForm} />}
+        {step === 6 && <StepAuthorizations next={next} back={back} saving={saving} submitForm={submitForm} />}
+        {step === 7 && <StepDone />}
       </div>
     </main>
   );
@@ -134,9 +222,10 @@ function StepWelcome({ next }: { next: () => void }) {
       <p>This wizard helps you set up your eligibility profile so the bot can match you against class action settlements and auto-file claims.</p>
       <p><b>How it works:</b></p>
       <ol style={{ lineHeight: 1.8 }}>
-        <li><b>Quick Pick</b> — check off recommended settlements you qualify for (most people get several)</li>
         <li><b>Profile</b> — your name and address for filling forms</li>
-        <li><b>Purchases</b> — add any extra purchases not in Quick Pick</li>
+        <li><b>Auto Sign-Up</b> — settlements almost EVERYONE qualifies for (one click to add all)</li>
+        <li><b>Quick Pick</b> — check off additional settlements you might qualify for</li>
+        <li><b>Purchases</b> — add any extra purchases not in the picks</li>
         <li><b>Breaches</b> — add data breach exposures</li>
         <li><b>Authorize</b> — enable categories for auto-filing</li>
       </ol>
@@ -188,7 +277,94 @@ function StepProfile({ next, back, saving, submitForm }: any) {
   );
 }
 
-// ─── Step 3: Quick Pick ──────────────────────────────────────────────────────
+// ─── Step 3: Auto Sign-Up ────────────────────────────────────────────────────
+function StepAutoSignUp({ next, back, saving, submitForm }: any) {
+  const [enrolled, setEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [count, setCount] = useState(0);
+
+  const enrollAll = async () => {
+    setEnrolling(true);
+    let n = 0;
+    for (const item of AUTO_SIGNUPS) {
+      const dateStr = item.period?.split(' to ')[0] ?? '2020-01-01';
+      await submitForm('/api/setup/purchase', {
+        merchant: item.merchant,
+        productName: item.name,
+        category: item.category,
+        purchaseDate: dateStr,
+        amount: '',
+      });
+      n++;
+    }
+    setCount(n);
+    setEnrolled(true);
+    setEnrolling(false);
+  };
+
+  return (
+    <div className="card" style={{ padding: 24 }}>
+      <h2 style={{ marginTop: 0 }}>Step 3: Auto Sign-Up</h2>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        These settlements have <b>extremely broad eligibility</b> — almost everyone in the US qualifies.
+        Click the button below to add all of them to your profile at once.
+      </p>
+
+      <div style={{ display: 'grid', gap: 8, margin: '16px 0' }}>
+        {AUTO_SIGNUPS.map((item, i) => (
+          <div key={i} style={{
+            padding: '12px 16px', borderRadius: 10,
+            background: enrolled ? '#0d1f17' : '#12151a',
+            border: '1px solid', borderColor: enrolled ? '#4ade8040' : '#1f242c',
+            transition: 'all 0.2s',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {enrolled && <span style={{ color: '#4ade80', fontSize: 16 }}>✓</span>}
+              <span style={{ fontWeight: 600, fontSize: 14 }}>{item.name}</span>
+              {item.payout !== 'varies' && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80', marginLeft: 'auto' }}>
+                  {item.payout}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: '#8a94a6', marginTop: 4, lineHeight: 1.5 }}>
+              {item.why}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!enrolled ? (
+        <button
+          className="btn"
+          onClick={enrollAll}
+          disabled={enrolling}
+          style={{
+            width: '100%', padding: '14px', fontSize: 15, marginTop: 8,
+            background: 'linear-gradient(135deg, #4ade80, #22c55e)',
+          }}
+        >
+          {enrolling ? 'Adding all settlements...' : `✓ Sign me up for all ${AUTO_SIGNUPS.length} settlements`}
+        </button>
+      ) : (
+        <div style={{
+          textAlign: 'center', padding: '14px',
+          background: '#0d1f17', borderRadius: 10,
+          color: '#4ade80', fontWeight: 600, fontSize: 14,
+        }}>
+          ✓ Added {count} settlements to your profile!
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <button className="btn ghost" onClick={back}>Back</button>
+        <button className="btn" onClick={next}>{enrolled ? 'Continue' : 'Skip for now'}</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 4: Quick Pick ──────────────────────────────────────────────────────
 function StepQuickPick({ next, back, saving, submitForm }: any) {
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [filter, setFilter] = useState('all');
