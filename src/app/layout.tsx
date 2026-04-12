@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Class Action Bot',
-  description: 'Personal class action settlement tracker and auto-filer',
+  title: 'ClaimBot — Free Money From Class Action Settlements',
+  description: 'Automatically find and file class action settlement claims you qualify for.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,18 +14,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="site-header">
           <div className="container">
             <Link href="/" className="brand">
-              Class Action Bot
+              <span style={{ fontSize: 20 }}>$</span> ClaimBot
             </Link>
             <nav>
-              <Link href="/settlements">Settlements</Link>
-              <Link href="/review">Review</Link>
-              <Link href="/profile">Profile</Link>
-              <Link href="/purchases">Purchases</Link>
-              <Link href="/breaches">Breaches</Link>
-              <Link href="/authorizations">Authorizations</Link>
-              <Link href="/claims">Claims</Link>
-              <Link href="/settings">Settings</Link>
-              <Link href="/audit">Audit</Link>
+              <Link href="/">Dashboard</Link>
+              <Link href="/settlements">My Settlements</Link>
+              <Link href="/claims">My Claims</Link>
+              <Link href="/profile">My Profile</Link>
             </nav>
           </div>
         </header>
