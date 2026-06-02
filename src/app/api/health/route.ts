@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, schema } from '@db/client';
+import { ensureSingleUser } from '@db/seed';
 import { count } from 'drizzle-orm';
 import { currentMode } from '@lib/claim-filer/submit';
 import { getDatabaseSchemaReadiness } from '@lib/database-schema-readiness';
@@ -9,6 +10,10 @@ export const runtime = 'nodejs';
 
 export async function GET() {
   try {
+    if (process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true') {
+      await ensureSingleUser();
+    }
+
     const [, filingMode, schemaReadiness] = await Promise.all([
       db.select({ n: count() }).from(schema.settlements),
       currentMode(),
@@ -29,7 +34,14 @@ export async function GET() {
         shadowDefault: filingMode === 'shadow',
       },
     }, { status: ok ? 200 : 500 });
-  } catch {
+  } catch (error) {
+    const diagnostic = process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true'
+      ? {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : 'Error',
+        }
+      : undefined;
+
     return NextResponse.json(
       {
         ok: false,
@@ -40,6 +52,7 @@ export async function GET() {
           schema: 'error',
         },
         error: 'health check failed',
+        diagnostic,
       },
       { status: 500 },
     );
