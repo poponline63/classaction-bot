@@ -1,4 +1,4 @@
-// Phase 3 end-to-end smoke test:
+// Claim filing end-to-end smoke test:
 // 1. Serve the local RevitaLash fixture form over HTTP on :4499
 // 2. Point a real DB settlement row at that URL
 // 3. Queue a claim for that match
@@ -89,7 +89,7 @@ async function main() {
     .where(like(schema.settlements.caseName, '%RevitaLash%'))
     .limit(1);
   if (!revita[0]) {
-    console.error('[smoke-filer] no RevitaLash settlement in DB — run scrape first');
+    console.error('[smoke-filer] no RevitaLash settlement in DB - run scrape first');
     process.exit(1);
   }
   const settlement = revita[0];
@@ -168,10 +168,10 @@ async function main() {
       ['confirmation screenshot skipped in shadow mode', result.screenshots.confirmation === null],
     ];
 
-    console.log('\n=== Phase 3 acceptance checks ===');
+    console.log('\n=== Claim filing acceptance checks ===');
     let allOk = true;
     for (const [label, ok] of checks) {
-      console.log(`${ok ? '✓' : '✗'} ${label}`);
+      console.log(`${ok ? 'OK' : 'FAIL'} ${label}`);
       if (!ok) allOk = false;
     }
 

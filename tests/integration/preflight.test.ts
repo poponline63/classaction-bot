@@ -16,6 +16,8 @@ const TMP_DB = path.join(TMP_DIR, 'test.db');
 process.env.DATABASE_URL = `file:${TMP_DB}`;
 process.env.SINGLE_USER_EMAIL = 'preflight-test@example.com';
 process.env.CLAIM_FILER_MAX_PER_DAY = '20';
+delete process.env.CLAIMBOT_DEV_SUBSCRIPTION_PLAN;
+delete process.env.CLAIMBOT_DEV_SUBSCRIPTION_STATUS;
 
 // Lazy-loaded handles — populated in beforeAll after env is set
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +39,8 @@ interface SeededIds {
 }
 
 async function seedWorld(overrides: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  user?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settlement?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +67,13 @@ async function seedWorld(overrides: {
 
   const users = await db
     .insert(schema.users)
-    .values({ email: 'preflight-test@example.com', displayName: 'test' })
+    .values({
+      email: 'preflight-test@example.com',
+      displayName: 'test',
+      subscriptionPlan: 'pro',
+      subscriptionStatus: 'active',
+      ...overrides.user,
+    })
     .returning();
   const userId = users[0].id;
 
@@ -222,6 +232,21 @@ describe('preflight — abort scenarios', () => {
     const r = await preflight(claimId);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe('AUTHORIZATION_DISABLED');
+  });
+
+  it('4b. AUTOMATION_PLAN_REQUIRED when a queued claim user no longer has paid automation access', async () => {
+    const { claimId } = await seedWorld({
+      user: {
+        subscriptionPlan: 'plus',
+        subscriptionStatus: 'active',
+      },
+    });
+    const r = await preflight(claimId);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.reason).toBe('AUTOMATION_PLAN_REQUIRED');
+      expect(r.detail).toContain('active Pro or Founding access');
+    }
   });
 
   it('5. AUTHORIZATION_REVOKED when the auth was revoked', async () => {

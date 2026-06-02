@@ -1,0 +1,125 @@
+name: ClaimBot paid automation worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Maximum due jobs to process in this worker run"
+        required: false
+        default: "3"
+      seed_smoke_job:
+        description: "Create one synthetic due file_claim smoke job before processing"
+        required: false
+        default: "false"
+  schedule:
+    - cron: "*/5 * * * *"
+
+concurrency:
+  group: claimbot-paid-automation-worker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  worker-once:
+    name: Process due file_claim jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      CLAIM_FILER_MODE: ${{ vars.CLAIM_FILER_MODE || 'shadow' }}
+      CLAIM_FILER_LIVE_ACK: ${{ vars.CLAIM_FILER_LIVE_ACK }}
+      CLAIM_FILER_MAX_PER_DAY: ${{ vars.CLAIM_FILER_MAX_PER_DAY || '20' }}
+      CLAIMBOT_DISABLE_AUTH: "false"
+      CLAIMBOT_WORKER_ONCE_LIMIT: ${{ github.event.inputs.limit || vars.CLAIMBOT_WORKER_ONCE_LIMIT || '3' }}
+      CLAIMBOT_WORKER_SMOKE_RECEIPT_PATH: data/worker-smoke-receipt.json
+      SCRAPER_USER_AGENT: ${{ vars.SCRAPER_USER_AGENT }}
+      CLAIMBOT_SUPPORT_EMAIL: ${{ vars.CLAIMBOT_SUPPORT_EMAIL }}
+      CLAIMBOT_SESSION_SECRET: ${{ secrets.CLAIMBOT_SESSION_SECRET }}
+      CLAIMBOT_BILLING_SYNC_SECRET: ${{ secrets.CLAIMBOT_BILLING_SYNC_SECRET }}
+      CLAIMBOT_STRIPE_WEBHOOK_SECRET: ${{ secrets.CLAIMBOT_STRIPE_WEBHOOK_SECRET }}
+      SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+      CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_API_KEY }}
+      HIBP_API_KEY: ${{ secrets.HIBP_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browser runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify worker secrets are present
+        shell: bash
+        run: |
+          missing=0
+          for key in DATABASE_URL; do
+            if [ -z "${!key}" ]; then
+              echo "::error title=Missing worker secret::$key is required for the scheduled worker."
+              missing=1
+            fi
+          done
+          if [[ "$DATABASE_URL" == libsql://* && -z "$DATABASE_AUTH_TOKEN" && -z "$TURSO_AUTH_TOKEN" ]]; then
+            echo "::error title=Missing worker secret::libsql DATABASE_URL requires DATABASE_AUTH_TOKEN or TURSO_AUTH_TOKEN."
+            missing=1
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.seed_smoke_job }}" = "true" ] && [ -z "$SMOKE_BASE_URL" ]; then
+            echo "::error title=Missing worker smoke variable::SMOKE_BASE_URL is required when seed_smoke_job=true so the synthetic file_claim points at the deployed preview smoke form."
+            missing=1
+          fi
+          if [ -n "$SMOKE_BASE_URL" ] && [[ "$SMOKE_BASE_URL" != https://* ]]; then
+            echo "::error title=Invalid worker smoke variable::SMOKE_BASE_URL must be an HTTPS deployed preview URL for hosted worker smoke proof."
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Seed synthetic file_claim smoke job
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.seed_smoke_job == 'true' }}
+        env:
+          CLAIMBOT_WORKER_SMOKE_SEED: allow
+        run: npm run worker:file-claim:seed
+
+      - name: Process due jobs
+        run: npm run worker:once -- --limit="$CLAIMBOT_WORKER_ONCE_LIMIT"
+
+      - name: Generate worker runtime packet
+        if: ${{ always() }}
+        run: npm run worker:packet
+
+      - name: Upload worker smoke seed receipt
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && github.event.inputs.seed_smoke_job == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: claimbot-worker-file-claim-smoke-seed
+          path: data/worker-file-claim-smoke-seed.json
+          if-no-files-found: ignore
+
+      - name: Upload worker smoke receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: claimbot-worker-smoke-receipt
+          path: data/worker-smoke-receipt.json
+          if-no-files-found: error
+
+      - name: Upload worker runtime packet
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: claimbot-worker-runtime-packet
+          path: |
+            data/worker-runtime-packet.json
+            data/worker-runtime-packet.md
+          if-no-files-found: error

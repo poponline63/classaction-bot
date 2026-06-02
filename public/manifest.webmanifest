@@ -1,0 +1,110 @@
+{
+  "name": "ClaimBot",
+  "short_name": "ClaimBot",
+  "description": "Review class action claim opportunities against saved facts, authorizations, proof gates, audit trails, and shadow-mode safety checks.",
+  "id": "/goal",
+  "start_url": "/goal",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0f1117",
+  "theme_color": "#141621",
+  "categories": ["productivity", "finance", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Plan",
+      "short_name": "Plan",
+      "description": "Open the ClaimBot start page for profile setup, review, and claim tracking.",
+      "url": "/goal",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml",
+          "purpose": "any maskable"
+        }
+      ]
+    },
+    {
+      "name": "Review",
+      "short_name": "Review",
+      "description": "Review possible, uncertain, and proof-required matches before tracking.",
+      "url": "/review",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml",
+          "purpose": "any maskable"
+        }
+      ]
+    },
+    {
+      "name": "Claims",
+      "short_name": "Claims",
+      "description": "Open tracked claims, review needs, and filing-safety status.",
+      "url": "/claims",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml",
+          "purpose": "any maskable"
+        }
+      ]
+    },
+    {
+      "name": "Packets",
+      "short_name": "Packets",
+      "description": "Open account records and support-ready claim details.",
+      "url": "/packets",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml",
+          "purpose": "any maskable"
+        }
+      ]
+    },
+    {
+      "name": "Launch",
+      "short_name": "Launch",
+      "description": "Open app readiness, setup status, and hosted preview checks.",
+      "url": "/launch",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml",
+          "purpose": "any maskable"
+        }
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-preview-dashboard.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "ClaimBot dashboard with Kimi dark app chrome"
+    },
+    {
+      "src": "/pwa-preview-launch.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "ClaimBot app readiness on mobile"
+    }
+  ]
+}

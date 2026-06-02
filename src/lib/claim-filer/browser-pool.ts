@@ -3,8 +3,8 @@
 // Each context stores cookies, local storage, and Turnstile fingerprints to
 // `data/browser-profiles/{admin}/`. The first few claims against a given
 // admin build up the fingerprint; subsequent claims look like a returning
-// user, which is how we survive Cloudflare Turnstile passively (Phase 4
-// adds the CapSolver fallback when the passive strategy misses).
+// user, which is how we survive Cloudflare Turnstile passively. CapSolver can
+// remain a fallback when the passive strategy misses.
 //
 // Contexts are opened lazily and cached. Call `closeAll()` on shutdown so
 // libraries like `better-sqlite3` / `@libsql/client` don't see leaked file
@@ -49,9 +49,8 @@ export async function getContext(
   const ctx = await chromium.launchPersistentContext(profileDir(admin), {
     headless: opts.headless ?? true,
     viewport: { width: 1280, height: 800 },
-    // Identify as a normal-looking desktop Chrome. This is NOT stealth —
-    // Phase 4 adds `playwright-extra` + `puppeteer-extra-plugin-stealth`
-    // for real anti-bot evasion against Cloudflare Turnstile.
+    // Identify as a normal-looking desktop Chrome. This is not a stealth layer;
+    // add a plugin only when a settlement administrator requires it.
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
       '(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
@@ -74,7 +73,7 @@ export async function getContext(
 }
 
 // Warm up a context by visiting the admin's home page once. Harmless in
-// shadow mode; critical for Phase 4's Turnstile survival.
+// shadow mode; critical for passive Turnstile handling.
 export async function warmUp(admin: Administrator, homeUrl: string): Promise<void> {
   const ctx = await getContext(admin);
   const page = await ctx.newPage();

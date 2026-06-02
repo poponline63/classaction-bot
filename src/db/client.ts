@@ -1,9 +1,6 @@
-// Shared SQLite handle. Uses @libsql/client (pure-JS/WASM) so it works on
-// Windows without the Visual Studio build toolchain.
-//
-// DATA_DIR env var (set by the desktop launcher) overrides the default
-// data directory. This lets the packaged exe store everything in
-// %APPDATA%/classaction-bot/ while dev mode uses ./data/.
+// Shared libSQL/SQLite handle. DATA_DIR is used for local and desktop file
+// databases; hosted deployments can use DATABASE_URL plus DATABASE_AUTH_TOKEN
+// or TURSO_AUTH_TOKEN.
 
 import 'dotenv/config';
 import { createClient } from '@libsql/client';
@@ -12,12 +9,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import * as schema from './schema';
 
-// Resolve the data directory — desktop launcher sets DATA_DIR, otherwise cwd.
+// The desktop launcher sets DATA_DIR; dev mode falls back to ./data.
 export const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
   : path.resolve(process.cwd(), 'data');
 
-// Ensure data dir exists
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_URL_RAW = process.env.DATABASE_URL ?? `file:${path.join(DATA_DIR, 'classaction.db')}`;
@@ -31,7 +27,8 @@ if (dbUrl.startsWith('file:')) {
   dbUrl = `file:${abs}`;
 }
 
-const client = createClient({ url: dbUrl });
+const authToken = process.env.DATABASE_AUTH_TOKEN ?? process.env.TURSO_AUTH_TOKEN;
+const client = createClient({ url: dbUrl, authToken });
 export const db = drizzle(client, { schema });
 export { schema };
 export * from './schema';

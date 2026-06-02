@@ -1,30 +1,61 @@
 import './globals.css';
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import type { Metadata, Viewport } from 'next';
+import { effectiveFilingModeForBootstrap, getBootstrapAuditStamp } from '@lib/bootstrap-audit-stamp';
+import { getPublicClientFeatureFlags } from '@lib/features';
+import { currentMode } from '@lib/claim-filer/submit';
+import ServiceWorkerRegister from './ServiceWorkerRegister';
+import ClaimStatusLockup from './ClaimStatusLockup';
+import KimiAppShell from './KimiAppShell';
+import BootstrapAuditStamp from './BootstrapAuditStamp';
 
 export const metadata: Metadata = {
-  title: 'ClaimBot — Free Money From Class Action Settlements',
-  description: 'Automatically find and file class action settlement claims you qualify for.',
+  applicationName: 'ClaimBot',
+  title: {
+    default: 'ClaimBot - Settlement Claim Workspace',
+    template: '%s - ClaimBot',
+  },
+  description: 'Review class action claim opportunities against saved facts, permissions, proof requirements, and shadow-mode safety checks.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ClaimBot',
+  },
+  openGraph: {
+    title: 'ClaimBot - Settlement Claim Workspace',
+    description: 'A hosted claim-review workspace for profile facts, permissions, proof checks, account history, and shadow-mode final checks.',
+    type: 'website',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const viewport: Viewport = {
+  themeColor: '#141621',
+};
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const featureFlags = getPublicClientFeatureFlags();
+  const requestedFilingMode = await currentMode();
+  const bootstrapStamp = getBootstrapAuditStamp({ filingMode: requestedFilingMode });
+  const filingMode = effectiveFilingModeForBootstrap({ filingMode: requestedFilingMode });
+  const hostedEnvIncomplete = bootstrapStamp.missingEnvKeys.length > 0;
+
   return (
     <html lang="en">
       <body>
-        <header className="site-header">
-          <div className="container">
-            <Link href="/" className="brand">
-              <span style={{ fontSize: 20 }}>$</span> ClaimBot
-            </Link>
-            <nav>
-              <Link href="/">Dashboard</Link>
-              <Link href="/settlements">My Settlements</Link>
-              <Link href="/claims">My Claims</Link>
-              <Link href="/profile">My Profile</Link>
-            </nav>
-          </div>
-        </header>
-        <main className="container">{children}</main>
+        <ServiceWorkerRegister />
+        <KimiAppShell featureFlags={featureFlags} filingMode={filingMode}>
+          <ClaimStatusLockup featureFlags={featureFlags} hostedEnvIncomplete={hostedEnvIncomplete} />
+          <div className="container">{children}</div>
+          <BootstrapAuditStamp filingMode={requestedFilingMode} />
+        </KimiAppShell>
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-// Phase 2 smoke test:
+// Matcher smoke test:
 // 1. Create a RevitaLash purchase matching the real scraped settlement
 // 2. Enable the CONSUMER_PRODUCT_PURCHASE authorization
 // 3. Run the matcher against all 202 settlements

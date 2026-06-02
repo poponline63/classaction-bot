@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-29T00:00:00.000Z",
+  "title": "Design System: ClaimBot",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Desk Violet",
+        "canonical": "#b892ff",
+        "tonalRamp": ["#6f4fbc", "#9b73f3", "#b892ff", "#c9a8ff", "#eadcff"]
+      },
+      "workspace": {
+        "role": "neutral",
+        "displayName": "Workspace Slate",
+        "canonical": "#0f1117",
+        "tonalRamp": ["#0b0d12", "#0f1117", "#141621", "#1a1d27", "#252836"]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Safe Green",
+        "canonical": "#22c55e",
+        "tonalRamp": ["#052e16", "#166534", "#22c55e", "#4ade80", "#bbf7d0"]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Caution Amber",
+        "canonical": "#fbbf24",
+        "tonalRamp": ["#451a03", "#92400e", "#f59e0b", "#fbbf24", "#fde68a"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Serif Display",
+        "purpose": "Dashboard and page-leading headings only."
+      },
+      "body": {
+        "displayName": "System Sans",
+        "purpose": "Controls, body copy, data, and product labels."
+      }
+    },
+    "elevation": {
+      "primaryPanel": "0 24px 70px rgba(0, 0, 0, 0.36)",
+      "softCard": "0 16px 48px rgba(0, 0, 0, 0.28)",
+      "hoverLift": "0 14px 34px rgba(0, 0, 0, 0.22)"
+    },
+    "motion": {
+      "durationFast": "150ms",
+      "durationBase": "200ms",
+      "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+      "reducedMotion": "Disable transforms and nonessential transitions."
+    },
+    "breakpoints": {
+      "mobile": "820px",
+      "tablet": "1120px",
+      "wide": "1500px"
+    },
+    "rules": [
+      "One next action beats many status panels.",
+      "Customer pages explain outcomes and limits, not implementation details.",
+      "Use full borders or tonal backgrounds instead of thick side-stripe accents.",
+      "Keep advanced setup records inside Launch, Packet Center, Audit, and Settings."
+    ]
+  }
+}

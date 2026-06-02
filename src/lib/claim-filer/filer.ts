@@ -19,8 +19,11 @@
 // =============================================================================
 
 import { db, schema } from '@db/client';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { writeAudit } from '@lib/audit';
+import { getUserSubscription } from '@lib/billing/entitlements';
+import { isSettlementCategoryEnabled } from '@lib/features';
+import { getClientPreviewAutomationLock } from './client-preview-lock';
 import {
   preflight,
   recordPreflightAbort,
@@ -56,8 +59,12 @@ export interface FilerResult {
   reason: string | null;
 }
 
+function shouldRunBrowserHeadless() {
+  return process.env.CLAIMBOT_BROWSER_HEADLESS !== 'false';
+}
+
 export async function fileClaim(claimId: number): Promise<FilerResult> {
-  const mode = currentMode();
+  const mode = await currentMode();
   console.log(`[filer] ${mode.toUpperCase()} mode — starting claim #${claimId}`);
 
   // ---------- Preflight ----------
@@ -119,8 +126,9 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
 
   try {
     emitProgress({ claimId, type: 'status', message: 'Opening browser...' });
-    // headless: false = opens a VISIBLE Chrome window so the user can watch
-    const browserCtx = await getContext(ctx.settlement.administrator, { headless: false });
+    const browserCtx = await getContext(ctx.settlement.administrator, {
+      headless: shouldRunBrowserHeadless(),
+    });
     const page = await browserCtx.newPage();
 
     try {
@@ -186,7 +194,13 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
         );
       }
       attestationText = attestation.text;
-      emitProgress({ claimId, type: 'status', message: 'Attestation found — preparing to submit' });
+      emitProgress({
+        claimId,
+        type: 'status',
+        message: mode === 'live'
+          ? 'Attestation found - preparing to submit'
+          : 'Attestation found - preparing evidence record',
+      });
 
       // Persist submitted data + attestation snapshot BEFORE clicking submit
       await db
@@ -220,11 +234,16 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
           actor: 'filer',
         });
         notifyClaimFiled({
+          mode: 'shadow',
           caseName: ctx.settlement.caseName,
           confirmationId: null,
           payoutEstimate: ctx.settlement.payoutEstimate,
         }).catch(() => undefined);
-        emitProgress({ claimId, type: 'done', message: 'Claim submitted in preview mode! Switch to Live mode to actually submit.' });
+        emitProgress({
+          claimId,
+          type: 'done',
+          message: 'Shadow mode complete: form prepared and evidence captured. Nothing was submitted.',
+        });
         return {
           claimId,
           mode,
@@ -258,8 +277,8 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
       if (!submitBtn) {
         throw new Error('submit button not found');
       }
-      emitProgress({ claimId, type: 'status', message: 'Form complete — submitting in 3 seconds...' });
-      await emitScreenshot(page, claimId, 'Form filled — about to submit');
+      emitProgress({ claimId, type: 'status', message: 'Form complete - submitting in 3 seconds...' });
+      await emitScreenshot(page, claimId, 'Form filled - about to submit');
       // Pause so the user can see the completed form before we click submit
       await page.waitForTimeout(3000);
       emitProgress({ claimId, type: 'status', message: 'Clicking submit...' });
@@ -273,7 +292,7 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
       emitProgress({ claimId, type: 'status', message: 'Waiting for confirmation...' });
       confirmationId = await extractConfirmationId(page);
       confirmPath = await captureConfirmation(page, claimId);
-      await emitScreenshot(page, claimId, confirmationId ? `Confirmed! #${confirmationId}` : 'Submitted — checking for confirmation');
+      await emitScreenshot(page, claimId, confirmationId ? `Confirmed: ${confirmationId}` : 'Submitted - checking for confirmation');
 
       await db
         .update(schema.claims)
@@ -293,11 +312,16 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
         actor: 'filer',
       });
       notifyClaimFiled({
+        mode: 'live',
         caseName: ctx.settlement.caseName,
         confirmationId,
         payoutEstimate: ctx.settlement.payoutEstimate,
       }).catch(() => undefined);
-      emitProgress({ claimId, type: 'done', message: confirmationId ? `Claim submitted! Confirmation: ${confirmationId}` : 'Claim submitted successfully!' });
+      emitProgress({
+        claimId,
+        type: 'done',
+        message: confirmationId ? `Live filing submitted. Confirmation: ${confirmationId}` : 'Live filing submitted successfully.',
+      });
 
       return {
         claimId,
@@ -353,10 +377,125 @@ export async function fileClaim(claimId: number): Promise<FilerResult> {
 }
 
 // Queue a claim row for a given match. Called from POST /api/claims/[id]/file
-// or from a "File this" button on the review page.
+// or from a "Queue this" button on the review page.
+async function writeQueueBlockedAudit(args: {
+  userId: number;
+  matchId: number;
+  settlementId: number;
+  category: string;
+  gate: string;
+  reason: string;
+}) {
+  await writeAudit({
+    userId: args.userId,
+    eventType: 'CLAIM_QUEUE_BLOCKED',
+    entityType: 'match',
+    entityId: args.matchId,
+    payload: {
+      settlementId: args.settlementId,
+      category: args.category,
+      gate: args.gate,
+      reason: args.reason,
+    },
+    actor: 'user',
+  });
+}
+
+type QueueClaimResult = {
+  claimId: number;
+  jobId: number | null;
+  jobReused: boolean;
+};
+
+async function ensureFileClaimJob(args: {
+  userId: number;
+  claimId: number;
+  matchId: number;
+  settlementId: number;
+  source: 'new-claim' | 'existing-claim-rearmed' | 'single-claim-run';
+}): Promise<{ jobId: number; reused: boolean }> {
+  const activeJobs = await db
+    .select()
+    .from(schema.jobs)
+    .where(and(
+      eq(schema.jobs.userId, args.userId),
+      eq(schema.jobs.type, 'file_claim'),
+    ));
+  const existing = activeJobs.find((job) => {
+    const payload = (job.payloadJson ?? {}) as { claimId?: number };
+    return payload.claimId === args.claimId && (job.status === 'pending' || job.status === 'running');
+  });
+
+  if (existing) {
+    return { jobId: existing.id, reused: true };
+  }
+
+  const inserted = await db.insert(schema.jobs).values({
+    userId: args.userId,
+    type: 'file_claim',
+    payloadJson: {
+      claimId: args.claimId,
+      automationMode: 'full_guarded',
+      workerCadence: 'automatic_polling',
+    },
+    priority: 50,
+  }).returning();
+  const jobId = inserted[0]!.id;
+
+  await writeAudit({
+    userId: args.userId,
+    eventType: 'JOB_ENQUEUED',
+    entityType: 'job',
+    entityId: jobId,
+    payload: {
+      type: 'file_claim',
+      claimId: args.claimId,
+      matchId: args.matchId,
+      settlementId: args.settlementId,
+      automationMode: 'full_guarded',
+      workerCadence: 'automatic_polling',
+      source: args.source,
+    },
+    actor: 'system',
+  });
+
+  return { jobId, reused: false };
+}
+
+export async function ensureFileClaimJobForClaim(args: {
+  userId: number;
+  claimId: number;
+  source?: 'single-claim-run' | 'existing-claim-rearmed';
+}): Promise<QueueClaimResult | { error: string }> {
+  const rows = await db
+    .select()
+    .from(schema.claims)
+    .where(and(
+      eq(schema.claims.id, args.claimId),
+      eq(schema.claims.userId, args.userId),
+    ))
+    .limit(1);
+  const claim = rows[0];
+  if (!claim) return { error: 'claim not found' };
+  if (claim.status !== 'QUEUED' && claim.status !== 'PREFLIGHT') {
+    return { error: `claim is not runnable: ${claim.status}` };
+  }
+
+  const job = await ensureFileClaimJob({
+    userId: args.userId,
+    claimId: claim.id,
+    matchId: claim.matchId,
+    settlementId: claim.settlementId,
+    source: args.source ?? 'single-claim-run',
+  });
+
+  return { claimId: claim.id, jobId: job.jobId, jobReused: job.reused };
+}
+
 export async function queueClaim(
   matchId: number,
-): Promise<{ claimId: number } | { error: string }> {
+  expectedUserId?: number,
+): Promise<QueueClaimResult | { error: string }> {
   const rows = await db
     .select({
       m: schema.matches,
@@ -368,12 +507,57 @@ export async function queueClaim(
     .limit(1);
   const joined = rows[0];
   if (!joined) return { error: 'match not found' };
+  if (expectedUserId != null && joined.m.userId !== expectedUserId) {
+    return { error: 'match not found' };
+  }
 
   if (joined.m.verdict !== 'ELIGIBLE') {
-    return { error: `cannot queue a ${joined.m.verdict} match` };
+    const error = `cannot queue a ${joined.m.verdict} match`;
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'matcher-verdict',
+      reason: error,
+    });
+    return { error };
+  }
+  if (!isSettlementCategoryEnabled(joined.s.category)) {
+    const error = `category ${joined.s.category} is disabled for this client deployment`;
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'category-feature-flag',
+      reason: error,
+    });
+    return { error };
   }
   if (joined.s.proofRequired) {
-    return { error: 'settlement requires proof — excluded from auto-filing' };
+    const error = 'settlement requires proof - manual review required';
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'proof-required',
+      reason: error,
+    });
+    return { error };
+  }
+  if (!joined.s.claimFormUrl) {
+    const error = 'settlement has no claim form URL';
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'claim-form-url',
+      reason: error,
+    });
+    return { error };
   }
 
   // Find an active authorization for the settlement's category
@@ -386,7 +570,48 @@ export async function queueClaim(
     (a) => a.category === joined.s.category && a.enabled && !a.revokedAt,
   );
   if (!auth) {
-    return { error: `no active authorization for category ${joined.s.category}` };
+    const error = `no active authorization for category ${joined.s.category}`;
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'category-authorization',
+      reason: error,
+    });
+    return { error };
+  }
+
+  const subscription = await getUserSubscription(joined.m.userId);
+  if (!subscription.automationEnabled) {
+    const error = 'automation plan required - upgrade to Pro or Founding to use the authorized filing path';
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'paid-automation-entitlement',
+      reason: error,
+    });
+    return { error };
+  }
+
+  const clientPreviewLock = await getClientPreviewAutomationLock(joined.m.userId);
+  if (clientPreviewLock.locked) {
+    // Guardrail marker for validate:ui: client preview checklist required.
+    const nextStep = clientPreviewLock.payload.summary.nextStep;
+    const error = nextStep
+      ? `account readiness required - ${nextStep.label}: ${nextStep.nextAction}`
+      : 'account readiness required before queueing claims';
+    await writeQueueBlockedAudit({
+      userId: joined.m.userId,
+      matchId,
+      settlementId: joined.s.id,
+      category: joined.s.category,
+      gate: 'client-preview-checklist',
+      reason: error,
+    });
+    return { error };
   }
 
   // Don't double-queue the same match
@@ -395,7 +620,20 @@ export async function queueClaim(
     .from(schema.claims)
     .where(eq(schema.claims.matchId, matchId))
     .limit(1);
-  if (existing[0]) return { claimId: existing[0].id };
+  if (existing[0]) {
+    if (existing[0].status === 'QUEUED' || existing[0].status === 'PREFLIGHT') {
+      const job = await ensureFileClaimJob({
+        userId: joined.m.userId,
+        claimId: existing[0].id,
+        matchId,
+        settlementId: joined.s.id,
+        source: 'existing-claim-rearmed',
+      });
+      return { claimId: existing[0].id, jobId: job.jobId, jobReused: job.reused };
+    }
+
+    return { claimId: existing[0].id, jobId: null, jobReused: true };
+  }
 
   const inserted = await db
     .insert(schema.claims)
@@ -410,12 +648,12 @@ export async function queueClaim(
 
   const claimId = inserted[0]!.id;
 
-  // Enqueue a file_claim job
-  await db.insert(schema.jobs).values({
+  const job = await ensureFileClaimJob({
     userId: joined.m.userId,
-    type: 'file_claim',
-    payloadJson: { claimId },
-    priority: 50,
+    claimId,
+    matchId,
+    settlementId: joined.s.id,
+    source: 'new-claim',
   });
 
   await writeAudit({
@@ -423,9 +661,15 @@ export async function queueClaim(
     eventType: 'CLAIM_QUEUED',
     entityType: 'claim',
     entityId: claimId,
-    payload: { matchId, settlementId: joined.s.id },
+    payload: {
+      matchId,
+      settlementId: joined.s.id,
+      jobId: job.jobId,
+      automationMode: 'full_guarded',
+      workerCadence: 'automatic_polling',
+    },
     actor: 'user',
   });
 
-  return { claimId };
+  return { claimId, jobId: job.jobId, jobReused: job.reused };
 }

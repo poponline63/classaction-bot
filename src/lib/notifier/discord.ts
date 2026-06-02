@@ -30,13 +30,18 @@ export async function notifyDailySummary(result: IngestResult) {
 }
 
 export async function notifyClaimFiled(args: {
+  mode: 'shadow' | 'live';
   caseName: string;
   confirmationId: string | null;
   payoutEstimate: string | null;
 }) {
+  const title = args.mode === 'live' ? 'Claim filed' : 'Claim prepared in shadow mode';
+  const confirmation = args.mode === 'live'
+    ? `Confirmation: ${args.confirmationId ?? '(pending)'}`
+    : 'Confirmation: not submitted in shadow mode';
   await post(
-    `**Claim filed** — ${args.caseName}\n` +
-      `Confirmation: ${args.confirmationId ?? '(pending)'}` +
+    `**${title}** — ${args.caseName}\n` +
+      confirmation +
       (args.payoutEstimate ? `  •  Est. payout: ${args.payoutEstimate}` : ''),
   );
 }

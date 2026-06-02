@@ -4,9 +4,9 @@
 // Design principles:
 //   1. A rule NEVER returns ELIGIBLE by itself unless it has strong positive
 //      evidence. Weak signals return NEEDS_REVIEW.
-//   2. Any INELIGIBLE verdict wins — see verdict.ts.
+//   2. Any INELIGIBLE verdict wins - see verdict.ts.
 //   3. Rules must be PURE. No DB calls. No network. No time.now() tricks that
-//      aren't testable — pass dates in via the context.
+//      aren't testable - pass dates in via the context.
 //   4. Every rule records exactly what it matched on so the /review page can
 //      show a human-readable trace.
 
@@ -57,7 +57,7 @@ function defendantAliasSet(settlementDefendant: string, aliases: string[]): Set<
 
 // Return the best merchant-match strength between an alias and a normalized
 // purchase merchant. We combine exact similarity with a substring containment
-// bonus — class-action case titles often embed a product name ("RevitaLash
+// bonus - class-action case titles often embed a product name ("RevitaLash
 // Serum") while the user enters just the brand ("RevitaLash"), so pure edit
 // distance under-reports the real match quality.
 function merchantMatchStrength(alias: string, merchant: string): number {
@@ -88,10 +88,10 @@ function merchantMatchStrength(alias: string, merchant: string): number {
 // and AUTO_DEFECT: find any user purchase whose merchant matches the
 // defendant AND whose purchase date falls inside the class period.
 //
-// Strong match (similarity >= 0.9, inside period) → ELIGIBLE at 0.95
-// Weak match (similarity 0.75..0.9, inside period) → NEEDS_REVIEW at 0.6
-// No period info but merchant matches strongly → NEEDS_REVIEW at 0.55
-// Period exists + purchases exist but NONE inside → INELIGIBLE at 0.9
+// Strong match (similarity >= 0.9, inside period) -> ELIGIBLE at 0.95
+// Weak match (similarity 0.75..0.9, inside period) -> NEEDS_REVIEW at 0.6
+// No period info but merchant matches strongly -> NEEDS_REVIEW at 0.55
+// Period exists + purchases exist but NONE inside -> INELIGIBLE at 0.9
 
 export const rulePurchaseMatch: Rule = (ctx: MatcherContext): RuleResult => {
   const name = 'rulePurchaseMatch';
@@ -153,7 +153,7 @@ export const rulePurchaseMatch: Rule = (ctx: MatcherContext): RuleResult => {
 
   if (!best) {
     // Purchases exist but none even resemble the defendant.
-    // That's "doesn't apply", not "ineligible" — user might shop elsewhere.
+    // That's "doesn't apply", not "ineligible" - user might shop elsewhere.
     return { ruleName: name, applicable: false };
   }
 
@@ -171,7 +171,7 @@ export const rulePurchaseMatch: Rule = (ctx: MatcherContext): RuleResult => {
   if (hasPeriod && !best.inPeriod) {
     // Was the class period defined AND we have at least one purchase of that
     // merchant AND none fell inside? Then we know this user purchased the
-    // product outside the window — INELIGIBLE.
+    // product outside the window - INELIGIBLE.
     const anyInPeriod = ctx.purchases.some((p) => {
       const pm = p.merchantNormalized || '';
       const hit = [...aliasSet].some((a) => merchantMatchStrength(a, pm) >= 0.75);
@@ -293,7 +293,7 @@ export const ruleBreachMatch: Rule = (ctx: MatcherContext): RuleResult => {
     applicable: true,
     verdict: 'NEEDS_REVIEW',
     confidence: 0.6,
-    reason: 'Weak breach name match — verify manually',
+    reason: 'Weak breach name match - verify manually',
     fields,
   };
 };
@@ -335,8 +335,8 @@ export const ruleDeadlineNotPassed: Rule = (ctx: MatcherContext): RuleResult => 
 // -----------------------------------------------------------------------------
 // Some settlements define a state-specific class ("residents of California
 // who purchased..."). Check the profile's addresses for a state match.
-// For MVP we just look for US state abbreviations or names in the class
-// definition text and intersect with the profile's known states.
+// Look for US state abbreviations or names in the class definition text and
+// intersect them with the profile's known states.
 
 const US_STATES: Record<string, string> = {
   AL: 'alabama', AK: 'alaska', AZ: 'arizona', AR: 'arkansas', CA: 'california',
@@ -411,7 +411,7 @@ export const ruleGeographicScope: Rule = (ctx: MatcherContext): RuleResult => {
 // -----------------------------------------------------------------------------
 // Rule: category authorization gate
 // -----------------------------------------------------------------------------
-// This isn't strictly a rule about class membership — it's a gate that the
+// This isn't strictly a rule about class membership - it's a gate that the
 // FILER uses. Listed here so it appears in the reasoning trace when a user
 // hasn't authorized a category yet. Matches are still produced for
 // un-authorized categories so the user can review them and enable the
@@ -426,7 +426,7 @@ export const ruleAuthorizationRequired: Rule = (ctx: MatcherContext): RuleResult
       applicable: true,
       verdict: 'NEEDS_REVIEW',
       confidence: 0.5,
-      reason: 'Settlement category is UNKNOWN — cannot be auto-filed',
+      reason: 'Settlement category is UNKNOWN - manual review required',
       fields: {},
     };
   }
@@ -439,7 +439,7 @@ export const ruleAuthorizationRequired: Rule = (ctx: MatcherContext): RuleResult
       applicable: true,
       verdict: 'NEEDS_REVIEW',
       confidence: 0.5,
-      reason: `No active authorization for category ${s.category} (enable on /authorizations)`,
+      reason: `No active authorization for category ${s.category} (enable on /permissions)`,
       fields: { category: s.category },
     };
   }

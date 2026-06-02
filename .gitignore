@@ -5,13 +5,19 @@
 
 # testing
 /coverage
+/tmp-ui-audit
 
 # next.js
 /.next/
+/.next-dev*/
+/.next-smoke*/
 /out/
 
 # production
 /build
+
+# Netlify local link state
+.netlify
 
 # misc
 .DS_Store

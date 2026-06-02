@@ -11,7 +11,11 @@ export type AuditEntityType =
   | 'settlement'
   | 'claim'
   | 'match'
+  | 'profile'
+  | 'purchase'
+  | 'breach'
   | 'authorization'
+  | 'user'
   | 'job'
   | 'system';
 

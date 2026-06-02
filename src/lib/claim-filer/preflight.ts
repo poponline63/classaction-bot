@@ -19,7 +19,7 @@
 // queue). Any abort is recorded in the audit log with the exact reason.
 //
 // The gate is DEFENSIVE. False aborts are fine — they become NEEDS_REVIEW.
-// False passes are not fine — they file a claim the user isn't entitled to.
+// False passes are not fine; they can submit unsupported claims.
 // =============================================================================
 
 import { db, schema } from '@db/client';
@@ -33,6 +33,7 @@ import type {
 import type { MatcherContext } from '@lib/matcher/types';
 import { runRules } from '@lib/matcher/verdict';
 import { writeAudit } from '@lib/audit';
+import { getUserSubscription } from '@lib/billing/entitlements';
 
 export type PreflightOk = { ok: true; ctx: PreflightContext };
 export type PreflightAbort = {
@@ -57,7 +58,8 @@ export type PreflightAbortReason =
   | 'MATCHER_VERDICT_NOT_ELIGIBLE'
   | 'MATCHER_CONFIDENCE_TOO_LOW'
   | 'RATE_LIMIT_EXCEEDED'
-  | 'NO_CLAIM_FORM_URL';
+  | 'NO_CLAIM_FORM_URL'
+  | 'AUTOMATION_PLAN_REQUIRED';
 
 export interface PreflightContext {
   claim: Claim;
@@ -69,7 +71,7 @@ export interface PreflightContext {
   preflightAttestationText: string;
 }
 
-// The minimum ELIGIBLE confidence we accept to actually file a claim.
+// The minimum ELIGIBLE confidence we accept to submit an unsupported claim.
 // Rules return 0.95 for a strong positive; this bar keeps us above that.
 const MIN_FILING_CONFIDENCE = 0.9;
 
@@ -106,6 +108,14 @@ export async function preflight(claimId: number): Promise<PreflightResult> {
     return abort(
       'CLAIM_NOT_QUEUED',
       `claim ${claimId} is in status ${claim.status}`,
+    );
+  }
+
+  const subscription = await getUserSubscription(claim.userId);
+  if (!subscription.automationEnabled) {
+    return abort(
+      'AUTOMATION_PLAN_REQUIRED',
+      `user ${claim.userId} is on ${subscription.plan}/${subscription.status}; active Pro or Founding access is required for filing preflight`,
     );
   }
 
@@ -174,13 +184,13 @@ export async function preflight(claimId: number): Promise<PreflightResult> {
   if (settlement.proofRequired) {
     return abort(
       'PROOF_REQUIRED',
-      `settlement requires proof of purchase — excluded from MVP auto-filing`,
+      'settlement requires proof of purchase - manual review required',
     );
   }
   if (!settlement.claimFormUrl) {
     return abort(
       'NO_CLAIM_FORM_URL',
-      `settlement has no claim form URL — cannot be auto-filed`,
+      'settlement has no claim form URL - cannot queue for filing',
     );
   }
 

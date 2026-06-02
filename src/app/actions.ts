@@ -1,7 +1,7 @@
-// Server actions — invoked from form submissions on CRUD pages.
+// Server actions - invoked from form submissions on CRUD pages.
 // Every mutation filters by userId and writes an audit entry where
 // relevant. Running the matcher on profile edits is debounced via a
-// simple inline call for MVP; Phase 5 moves this to a background job.
+// simple inline call; hosted worker queueing can take this over later.
 
 'use server';
 
@@ -12,10 +12,18 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { currentUserId } from '@lib/auth/current-user';
 import { normalizeDefendant } from '@lib/scraper/normalize';
-import { writeAudit } from '@lib/audit';
 import { runMatcher } from '@lib/matcher/run-matcher';
 import { refreshHibp } from '@lib/hibp/refresh';
-import { queueClaim, fileClaim } from '@lib/claim-filer/filer';
+import { ensureFileClaimJobForClaim, queueClaim } from '@lib/claim-filer/filer';
+import { getClientPreviewAutomationLock } from '@lib/claim-filer/client-preview-lock';
+import {
+  FILE_BOUNDARY_ACK,
+  QUEUE_BOUNDARY_ACK,
+  QUEUE_TRUST_LOCK_ACK,
+  hasBoundaryAck,
+  isClaimRunnableStatus,
+} from '@lib/claim-filer/request-boundary';
+import { isClientFeatureEnabled, isSettlementCategoryEnabled } from '@lib/features';
 
 // -----------------------------------------------------------------------------
 // Profile
@@ -90,9 +98,11 @@ export async function addPurchase(formData: FormData) {
   const category = formData.get('category') as SettlementCategory;
   const purchaseDate = formData.get('purchaseDate') as string;
   const amount = Number(formData.get('amount') ?? 0) || null;
+  const receiptPath = ((formData.get('receiptPath') as string | null) || '').trim() || null;
 
   if (!merchant || !purchaseDate) return;
   if (!SETTLEMENT_CATEGORIES.includes(category)) return;
+  if (!isSettlementCategoryEnabled(category)) return;
 
   await db.insert(schema.purchases).values({
     userId,
@@ -102,6 +112,7 @@ export async function addPurchase(formData: FormData) {
     category,
     purchaseDate: new Date(purchaseDate),
     amount,
+    receiptPath,
     source: 'manual',
   });
 
@@ -123,6 +134,8 @@ export async function deletePurchase(formData: FormData) {
 // -----------------------------------------------------------------------------
 
 export async function addBreach(formData: FormData) {
+  if (!isClientFeatureEnabled('CLAIMBOT_FEATURE_BREACH_IMPORT')) return;
+
   const userId = await currentUserId();
   const breachName = (formData.get('breachName') as string).trim();
   const email = (formData.get('email') as string).trim();
@@ -145,6 +158,8 @@ export async function addBreach(formData: FormData) {
 }
 
 export async function deleteBreach(formData: FormData) {
+  if (!isClientFeatureEnabled('CLAIMBOT_FEATURE_BREACH_IMPORT')) return;
+
   const userId = await currentUserId();
   const id = Number(formData.get('id'));
   if (!Number.isFinite(id)) return;
@@ -160,93 +175,11 @@ export async function deleteBreach(formData: FormData) {
 }
 
 export async function runHibpRefresh() {
+  if (!isClientFeatureEnabled('CLAIMBOT_FEATURE_BREACH_IMPORT')) return;
+
   const userId = await currentUserId();
   await refreshHibp(userId);
   revalidatePath('/breaches');
-}
-
-// -----------------------------------------------------------------------------
-// Class authorizations (legally critical)
-// -----------------------------------------------------------------------------
-// The attestation text is captured VERBATIM from the form field so the
-// user's explicit wording is preserved.
-
-export async function saveAuthorization(formData: FormData) {
-  const userId = await currentUserId();
-  const category = formData.get('category') as SettlementCategory;
-  const enabled = formData.get('enabled') === 'on';
-  const attestationText = (formData.get('attestationText') as string).trim();
-
-  if (!SETTLEMENT_CATEGORIES.includes(category)) return;
-  if (enabled && !attestationText) {
-    throw new Error(
-      'An enabled authorization must include verbatim attestation text.',
-    );
-  }
-
-  const existing = await db
-    .select()
-    .from(schema.classAuthorizations)
-    .where(
-      and(
-        eq(schema.classAuthorizations.userId, userId),
-        eq(schema.classAuthorizations.category, category),
-      ),
-    )
-    .limit(1);
-
-  const prior = existing[0];
-  const now = new Date();
-
-  if (prior) {
-    const wasEnabled = prior.enabled && !prior.revokedAt;
-    await db
-      .update(schema.classAuthorizations)
-      .set({
-        enabled,
-        attestationText: attestationText || prior.attestationText,
-        authorizedAt: enabled ? now : prior.authorizedAt,
-        revokedAt: enabled ? null : wasEnabled ? now : prior.revokedAt,
-        attestationVersion:
-          attestationText && attestationText !== prior.attestationText
-            ? prior.attestationVersion + 1
-            : prior.attestationVersion,
-      })
-      .where(eq(schema.classAuthorizations.id, prior.id));
-
-    await writeAudit({
-      userId,
-      eventType: enabled ? 'AUTHORIZATION_GRANTED' : 'AUTHORIZATION_REVOKED',
-      entityType: 'authorization',
-      entityId: prior.id,
-      payload: { category, attestationVersion: prior.attestationVersion, priorEnabled: wasEnabled },
-      actor: 'user',
-    });
-  } else {
-    const inserted = await db
-      .insert(schema.classAuthorizations)
-      .values({
-        userId,
-        category,
-        enabled,
-        attestationText,
-        attestationVersion: 1,
-        authorizedAt: enabled ? now : null,
-        revokedAt: null,
-      })
-      .returning();
-
-    await writeAudit({
-      userId,
-      eventType: enabled ? 'AUTHORIZATION_GRANTED' : 'AUTHORIZATION_REVOKED',
-      entityType: 'authorization',
-      entityId: inserted[0]!.id,
-      payload: { category, attestationVersion: 1 },
-      actor: 'user',
-    });
-  }
-
-  revalidatePath('/authorizations');
 }
 
 // -----------------------------------------------------------------------------
@@ -261,13 +194,16 @@ export async function triggerMatcher() {
 }
 
 // -----------------------------------------------------------------------------
-// Claim filing (Phase 3)
+// Claim filing
 // -----------------------------------------------------------------------------
 
 export async function queueClaimFromMatch(formData: FormData) {
+  const userId = await currentUserId();
   const matchId = Number(formData.get('matchId'));
   if (!Number.isFinite(matchId)) return;
-  const result = await queueClaim(matchId);
+  if (!hasBoundaryAck(formData.get('queueBoundaryAck'), QUEUE_BOUNDARY_ACK)) return;
+  if (formData.get('queueTrustLock') !== QUEUE_TRUST_LOCK_ACK) return;
+  const result = await queueClaim(matchId, userId);
   revalidatePath('/review');
   revalidatePath('/claims');
   if ('claimId' in result) {
@@ -276,9 +212,26 @@ export async function queueClaimFromMatch(formData: FormData) {
 }
 
 export async function runFileClaim(formData: FormData) {
+  const userId = await currentUserId();
   const claimId = Number(formData.get('claimId'));
   if (!Number.isFinite(claimId)) return;
-  await fileClaim(claimId);
+  if (!hasBoundaryAck(formData.get('fileBoundaryAck'), FILE_BOUNDARY_ACK)) return;
+  const claimRows = await db
+    .select({ id: schema.claims.id, status: schema.claims.status })
+    .from(schema.claims)
+    .where(and(eq(schema.claims.id, claimId), eq(schema.claims.userId, userId)))
+    .limit(1);
+  if (!claimRows[0]) return;
+  if (!isClaimRunnableStatus(claimRows[0].status)) return;
+  const clientPreviewLock = await getClientPreviewAutomationLock(userId);
+  if (clientPreviewLock.locked) {
+    redirect('/launch');
+  }
+  await ensureFileClaimJobForClaim({
+    userId,
+    claimId,
+    source: 'single-claim-run',
+  });
   revalidatePath(`/claims/${claimId}`);
   revalidatePath('/claims');
 }

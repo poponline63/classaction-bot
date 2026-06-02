@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   normalizeDefendant,
+  cleanScrapedJson,
+  cleanScrapedText,
   levenshtein,
   similarity,
   inferCategory,
@@ -8,6 +10,24 @@ import {
   computeCanonicalKey,
   normalize,
 } from '../../src/lib/scraper/normalize';
+
+describe('scraped text cleanup', () => {
+  it('repairs common UTF-8 mojibake from settlement sources', () => {
+    expect(cleanScrapedText('Trader Joe\u00e2\u20ac\u2122s - Receipts')).toBe('Trader Joe\u2019s - Receipts');
+    expect(cleanScrapedText('Amount $5 \u00e2\u20ac\u201c $10')).toBe('Amount $5 \u2013 $10');
+    expect(cleanScrapedText('17 Days Left \u00e2\u20ac\u00a2 Settlement')).toBe('17 Days Left \u2022 Settlement');
+  });
+
+  it('repairs nested raw JSON text without changing non-string values', () => {
+    expect(cleanScrapedJson({
+      title: 'Tom\u00e2\u20ac\u2122s',
+      nested: ['A\u00e2\u20ac\u201cB', 3, null],
+    })).toEqual({
+      title: 'Tom\u2019s',
+      nested: ['A\u2013B', 3, null],
+    });
+  });
+});
 
 describe('normalizeDefendant', () => {
   it('strips corporate suffixes', () => {
@@ -151,5 +171,23 @@ describe('normalize()', () => {
       classDefinition: 'All persons whose data was exposed in the Acme data breach',
     });
     expect(n.category).toBe('DATA_BREACH');
+  });
+
+  it('cleans display fields before returning normalized settlements', () => {
+    const n = normalize({
+      source: 'manual',
+      sourceUrl: 'https://example.com',
+      caseName: 'Trader Joe\u00e2\u20ac\u2122s Settlement',
+      defendant: 'Trader Joe\u00e2\u20ac\u2122s',
+      classDefinition: 'People who bought Trader Joe\u00e2\u20ac\u2122s products.',
+      payoutEstimate: '$5 \u00e2\u20ac\u201c $10',
+      raw: { caseName: 'Trader Joe\u00e2\u20ac\u2122s Settlement' },
+    });
+
+    expect(n.caseName).toBe('Trader Joe\u2019s Settlement');
+    expect(n.defendant).toBe('Trader Joe\u2019s');
+    expect(n.classDefinition).toBe('People who bought Trader Joe\u2019s products.');
+    expect(n.payoutEstimate).toBe('$5 \u2013 $10');
+    expect(n.raw).toEqual({ caseName: 'Trader Joe\u2019s Settlement' });
   });
 });

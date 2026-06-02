@@ -3,10 +3,10 @@
 // =============================================================================
 // Strategy: map each visible form field to a semantic "slot" (firstName,
 // lastName, email, address1, city, state, zip) by inspecting the label
-// text, placeholder, name attribute, and autocomplete attribute — then
+// text, placeholder, name attribute, and autocomplete attribute - then
 // fill from the user's profile.
 //
-// This is deliberately simple. Per-administrator fillers (Phase 4+) can
+// This is deliberately simple. Per-administrator fillers can
 // subclass this and add site-specific tweaks. Everything the generic
 // filler does must be safely no-op when the field doesn't exist.
 // =============================================================================
@@ -266,7 +266,7 @@ export async function fillGeneric(
         selector: f.selector,
       });
 
-      // Emit progress after each field — the viewer shows this in real-time
+      // Emit progress after each field - the viewer shows this in real-time
       if (progress) {
         await progress.onField(slot, val, filled, totalFillable);
       }

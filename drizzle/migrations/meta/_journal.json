@@ -15,6 +15,27 @@
       "when": 1775960786073,
       "tag": "0001_slow_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779672000000,
+      "tag": "0002_paid_automation_entitlements",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779843600000,
+      "tag": "0003_billing_event_idempotency",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1779847200000,
+      "tag": "0004_hosted_identity_subject",
+      "breakpoints": true
     }
   ]
 }

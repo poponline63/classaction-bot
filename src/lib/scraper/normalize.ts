@@ -48,6 +48,39 @@ export interface NormalizedSettlement extends RawSettlement {
 // Defendant name normalization
 // -----------------------------------------------------------------------------
 
+const MOJIBAKE_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\u00e2\u20ac\u2122/g, '\u2019'],
+  [/\u00e2\u20ac\u02dc/g, '\u2018'],
+  [/\u00e2\u20ac\u0153/g, '\u201c'],
+  [/\u00e2\u20ac\u009d/g, '\u201d'],
+  [/\u00e2\u20ac\u201c/g, '\u2013'],
+  [/\u00e2\u20ac\u201d/g, '\u2014'],
+  [/\u00e2\u20ac\u00a2/g, '\u2022'],
+  [/\u00e2\u201e\u00a2/g, '\u2122'],
+  [/\u00c2\u00ae/g, '\u00ae'],
+  [/\u00c2\u00a9/g, '\u00a9'],
+  [/\u00c2\u00a0/g, ' '],
+];
+
+export function cleanScrapedText(value: string): string {
+  let cleaned = value;
+  for (const [pattern, replacement] of MOJIBAKE_REPLACEMENTS) {
+    cleaned = cleaned.replace(pattern, replacement);
+  }
+  return cleaned.replace(/\s+/g, ' ').trim();
+}
+
+export function cleanScrapedJson(value: unknown): unknown {
+  if (typeof value === 'string') return cleanScrapedText(value);
+  if (Array.isArray(value)) return value.map(cleanScrapedJson);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, cleanScrapedJson(entry)]),
+    );
+  }
+  return value;
+}
+
 const CORPORATE_SUFFIXES = [
   'inc', 'incorporated', 'corp', 'corporation', 'llc', 'l l c',
   'llp', 'lp', 'ltd', 'limited', 'co', 'company', 'plc', 'gmbh',
@@ -58,7 +91,7 @@ const CORPORATE_SUFFIXES = [
 // Strip punctuation, lowercase, collapse whitespace, strip corp suffixes.
 export function normalizeDefendant(name: string): string {
   if (!name) return '';
-  let s = name
+  let s = cleanScrapedText(name)
     .toLowerCase()
     // remove trademark / registered / copyright marks
     .replace(/[®™©]/g, '')
@@ -185,9 +218,13 @@ export function computeCanonicalKey(
 // -----------------------------------------------------------------------------
 
 export function normalize(raw: RawSettlement): NormalizedSettlement {
-  const defendantNormalized = normalizeDefendant(raw.defendant);
+  const caseName = cleanScrapedText(raw.caseName);
+  const defendant = cleanScrapedText(raw.defendant);
+  const classDefinition = cleanScrapedText(raw.classDefinition);
+  const payoutEstimate = raw.payoutEstimate ? cleanScrapedText(raw.payoutEstimate) : raw.payoutEstimate;
+  const defendantNormalized = normalizeDefendant(defendant);
   const aliases = (raw.defendantAliases ?? [])
-    .map((a) => normalizeDefendant(a))
+    .map((a) => normalizeDefendant(cleanScrapedText(a)))
     .filter((a) => a.length > 0);
 
   // dedupe alias list — any alias within levenshtein 2 of another is a dup
@@ -198,7 +235,7 @@ export function normalize(raw: RawSettlement): NormalizedSettlement {
   }
 
   const category: SettlementCategory =
-    raw.category ?? inferCategory(`${raw.caseName} ${raw.classDefinition}`);
+    raw.category ?? inferCategory(`${caseName} ${classDefinition}`);
 
   const administrator: Administrator =
     raw.administrator ?? detectAdministrator(raw.claimFormUrl);
@@ -211,11 +248,16 @@ export function normalize(raw: RawSettlement): NormalizedSettlement {
 
   return {
     ...raw,
+    caseName,
+    defendant,
+    classDefinition,
+    payoutEstimate,
     defendantAliases: uniqueAliases,
     defendantNormalized,
     category,
     administrator,
     captchaType: raw.captchaType ?? 'unknown',
     canonicalKey,
+    raw: cleanScrapedJson(raw.raw),
   };
 }

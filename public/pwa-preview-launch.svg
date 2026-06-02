@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-labelledby="title desc">
+  <title id="title">ClaimBot launch readiness mobile preview</title>
+  <desc id="desc">Mobile ClaimBot launch readiness screen with dark Kimi app chrome, packet readiness, and external proof actions.</desc>
+  <rect width="390" height="844" fill="#0f1117"/>
+  <rect x="14" y="14" width="362" height="816" rx="28" fill="#141621" stroke="#2f3345"/>
+  <rect x="28" y="34" width="334" height="58" rx="16" fill="#1a1d27" stroke="#2f3345"/>
+  <rect x="46" y="49" width="28" height="28" rx="8" fill="#221a35" stroke="#6f58a7"/>
+  <text x="86" y="69" fill="#f0f0f5" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="16" font-weight="850">ClaimBot</text>
+  <text x="268" y="69" fill="#86efac" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="800">Shadow</text>
+  <rect x="28" y="112" width="334" height="146" rx="18" fill="#1a1d27" stroke="#2f3345"/>
+  <text x="50" y="146" fill="#b892ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="900">LAUNCH CHECKLIST</text>
+  <text x="50" y="178" fill="#f0f0f5" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="850">Finish proof before client invites</text>
+  <text x="50" y="214" fill="#b9bbc8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13">Hosted database, Identity, billing, legal, and preview promotion remain gated.</text>
+  <rect x="50" y="230" width="120" height="12" rx="6" fill="#2f3345"/>
+  <rect x="50" y="230" width="72" height="12" rx="6" fill="#fbbf24"/>
+  <rect x="28" y="276" width="334" height="108" rx="16" fill="#1a1d27" stroke="#2f3345"/>
+  <text x="50" y="310" fill="#9ca3af" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="900">CLIENT PREVIEW GATE</text>
+  <text x="50" y="344" fill="#fbbf24" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="34" font-weight="850">9 / 15</text>
+  <text x="144" y="344" fill="#d7d8e0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="800">packets ready</text>
+  <text x="50" y="366" fill="#b9bbc8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">Client preview remains locked until every packet clears.</text>
+  <rect x="28" y="402" width="334" height="286" rx="16" fill="#1a1d27" stroke="#2f3345"/>
+  <text x="50" y="434" fill="#f0f0f5" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="850">Next evidence activation</text>
+  <g font-family="Inter, Segoe UI, Arial, sans-serif">
+    <rect x="50" y="456" width="290" height="58" rx="10" fill="#141621" stroke="#2f3345"/>
+    <text x="68" y="480" fill="#fbbf24" font-size="13" font-weight="850">Operator account settings</text>
+    <text x="68" y="500" fill="#9ca3af" font-size="11">npm run operator:packet</text>
+    <rect x="50" y="526" width="290" height="58" rx="10" fill="#141621" stroke="#2f3345"/>
+    <text x="68" y="550" fill="#fbbf24" font-size="13" font-weight="850">Hosted database packet</text>
+    <text x="68" y="570" fill="#9ca3af" font-size="11">npm run hosted:db:packet</text>
+    <rect x="50" y="596" width="290" height="58" rx="10" fill="#141621" stroke="#2f3345"/>
+    <text x="68" y="620" fill="#86efac" font-size="13" font-weight="850">PWA readiness packet</text>
+    <text x="68" y="640" fill="#9ca3af" font-size="11">npm run pwa:packet</text>
+  </g>
+  <rect x="28" y="706" width="334" height="56" rx="16" fill="#10131c" stroke="#2f3345"/>
+  <text x="50" y="735" fill="#f0f0f5" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="850">Installed shell</text>
+  <text x="186" y="735" fill="#9ca3af" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">No claim data cached offline</text>
+  <g fill="#1a1d27" stroke="#2f3345">
+    <rect x="44" y="784" width="46" height="28" rx="14"/>
+    <rect x="116" y="784" width="46" height="28" rx="14"/>
+    <rect x="188" y="784" width="46" height="28" rx="14"/>
+    <rect x="260" y="784" width="46" height="28" rx="14"/>
+  </g>
+</svg>

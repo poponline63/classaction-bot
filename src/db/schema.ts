@@ -1,8 +1,8 @@
 // =============================================================================
-// Class Action Bot — Drizzle schema
+// Class Action Bot - Drizzle schema
 // =============================================================================
-// Every table FKs to users.id from day one, even though MVP is single-user.
-// This is the most important decision for the future SaaS migration: every
+// Every user-owned table FKs to users.id from day one.
+// This is the most important decision for hosted SaaS operation: every
 // query will filter by userId, and we never have to backfill that later.
 //
 // Legal safeguards live in this file as DB constraints where possible:
@@ -91,6 +91,12 @@ export const CLAIM_STATUSES = [
 ] as const;
 export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
 
+export const SUBSCRIPTION_PLANS = ['free', 'plus', 'pro', 'founding'] as const;
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+
+export const SUBSCRIPTION_STATUSES = ['inactive', 'trialing', 'active', 'past_due', 'cancelled'] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
 export const JOB_TYPES = [
   'scrape_ingest',
   'enrich_settlement',
@@ -117,20 +123,39 @@ export const AUDIT_EVENT_TYPES = [
   'SCRAPE_FAILED',
   'SETTLEMENT_DISCOVERED',
   'SETTLEMENT_UPDATED',
+  'SOURCE_ENRICHMENT_COMPLETED',
+  'SOURCE_CATALOG_IMPORTED',
   // matcher
   'MATCH_PRODUCED',
   'MATCH_VERDICT_CHANGED',
+  'MATCHER_RUN_COMPLETED',
+  // intake facts
+  'PROFILE_UPDATED',
+  'PURCHASE_ADDED',
+  'BREACH_ADDED',
+  'SETUP_SHADOW_REVIEW_STARTED',
+  'USER_TERMS_ACKNOWLEDGED',
   // authorizations
   'AUTHORIZATION_GRANTED',
   'AUTHORIZATION_REVOKED',
   // claims
   'CLAIM_QUEUED',
+  'CLAIM_QUEUE_BLOCKED',
   'CLAIM_PREFLIGHT_PASSED',
   'CLAIM_PREFLIGHT_ABORTED',
   'CLAIM_FILING_STARTED',
   'CLAIM_FILED',
   'CLAIM_FAILED',
   'CLAIM_PAID',
+  // billing
+  'BILLING_CHECKOUT_STARTED',
+  'BILLING_ENTITLEMENT_SYNCED',
+  // privacy/account controls
+  'PRIVACY_EXPORT_CREATED',
+  'PRIVACY_REQUEST_CREATED',
+  // hosted auth/session bridge
+  'AUTH_SESSION_CREATED',
+  'AUTH_SESSION_ENDED',
   // system
   'JOB_ENQUEUED',
   'JOB_COMPLETED',
@@ -138,20 +163,63 @@ export const AUDIT_EVENT_TYPES = [
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
 
 // -----------------------------------------------------------------------------
-// users — one row in MVP. Single source of truth for multi-tenancy later.
+// users - source of truth for tenant identity.
 // -----------------------------------------------------------------------------
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull().unique(),
+  externalSubject: text('external_subject'),
   displayName: text('display_name'),
+  subscriptionPlan: text('subscription_plan', { enum: SUBSCRIPTION_PLANS })
+    .notNull()
+    .default('free'),
+  subscriptionStatus: text('subscription_status', { enum: SUBSCRIPTION_STATUSES })
+    .notNull()
+    .default('inactive'),
+  subscriptionUpdatedAt: integer('subscription_updated_at', { mode: 'timestamp_ms' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),
-});
+}, (t) => ({
+  byExternalSubject: uniqueIndex('uniq_users_external_subject').on(t.externalSubject),
+}));
+
+// -----------------------------------------------------------------------------.
+// billing_events - idempotency ledger for processor callbacks.
+// -----------------------------------------------------------------------------
+
+export const billingEvents = sqliteTable(
+  'billing_events',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    eventId: text('event_id').notNull(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    email: text('email').notNull(),
+    processor: text('processor').notNull(),
+    plan: text('plan', { enum: SUBSCRIPTION_PLANS }).notNull(),
+    status: text('status', { enum: SUBSCRIPTION_STATUSES }).notNull(),
+    externalCustomerIdPresent: integer('external_customer_id_present', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    externalSubscriptionIdPresent: integer('external_subscription_id_present', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    processedAt: integer('processed_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    uniqEvent: uniqueIndex('uniq_billing_event_id').on(t.eventId),
+    byUser: index('idx_billing_event_user').on(t.userId),
+    byProcessedAt: index('idx_billing_event_processed_at').on(t.processedAt),
+  }),
+);
 
 // -----------------------------------------------------------------------------
-// settlements — canonical, deduped record of every class action we've found
+// settlements - canonical, deduped record of every class action we've found
 // -----------------------------------------------------------------------------
 
 export const settlements = sqliteTable(
@@ -206,7 +274,7 @@ export const settlements = sqliteTable(
       .notNull()
       .default('DISCOVERED'),
 
-    // raw JSON snapshot from the scraper — useful for debugging normalization
+    // raw JSON snapshot from the scraper - useful for debugging normalization
     rawJson: text('raw_json', { mode: 'json' }),
 
     discoveredAt: integer('discovered_at', { mode: 'timestamp_ms' })
@@ -217,7 +285,7 @@ export const settlements = sqliteTable(
       .default(sql`(unixepoch() * 1000)`),
   },
   (t) => ({
-    // canonicalKey must be unique GLOBALLY, not per-source — that's how we
+    // canonicalKey must be unique globally, not per-source. That's how we
     // dedupe the same case scraped from two different sources.
     uniqCanonicalKey: uniqueIndex('uniq_settlement_canonical_key').on(
       t.canonicalKey,
@@ -229,7 +297,7 @@ export const settlements = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// audit_log — append-only. The ORM layer in src/lib/audit exposes insert/select
+// audit_log - append-only. The ORM layer in src/lib/audit exposes insert/select
 // only, never update or delete.
 // -----------------------------------------------------------------------------
 
@@ -238,15 +306,15 @@ export const auditLog = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
 
-    // FK to users — every event belongs to someone. Even system events use
-    // the single-user id today so multi-tenancy queries work without surgery.
+    // FK to users - every event belongs to someone. Even system events use
+    // the current user's id so tenant-scoped queries remain reliable.
     userId: integer('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
 
     eventType: text('event_type', { enum: AUDIT_EVENT_TYPES }).notNull(),
 
-    // polymorphic entity reference — entity type + numeric id
+    // polymorphic entity reference - entity type + numeric id
     entityType: text('entity_type').notNull(),  // 'settlement' | 'claim' | 'match' | 'authorization' | 'job'
     entityId: integer('entity_id').notNull(),
 
@@ -268,7 +336,7 @@ export const auditLog = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// jobs — worker queue. Dead simple DB polling; upgrade to BullMQ at Phase 5.
+// jobs - worker queue. DB polling is simple enough for the first hosted worker.
 // -----------------------------------------------------------------------------
 
 export const jobs = sqliteTable(
@@ -310,8 +378,8 @@ export const jobs = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// Phase 2+ tables are defined here too so drizzle-kit generates one migration
-// from day one and we don't chase schema drift between phases.
+// Product tables are defined together so drizzle-kit generates one coherent
+// migration set and the local database does not drift from hosted schema.
 // -----------------------------------------------------------------------------
 
 export const profile = sqliteTable('profile', {
@@ -340,7 +408,7 @@ export const profile = sqliteTable('profile', {
   phonesJson: text('phones_json', { mode: 'json' })
     .$type<string[]>()
     .default(sql`'[]'`),
-  // encrypted w/ libsodium — only last4 + brand are stored as plaintext hints
+  // encrypted w/ libsodium - only last4 + brand are stored as plaintext hints
   paymentMethodsJson: text('payment_methods_json', { mode: 'json' }).default(
     sql`'[]'`,
   ),
@@ -409,12 +477,12 @@ export const dataBreachExposure = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// class_authorizations — LEGALLY CRITICAL
+// class_authorizations - LEGALLY CRITICAL
 // -----------------------------------------------------------------------------
 // This table IS the user's attestation. `attestationText` is stored verbatim
 // and never paraphrased. Revoking an authorization must cancel every queued
 // claim that references it (enforced by the revocation transaction in
-// src/lib/authorizations, not by the schema).
+// src/lib/permissions, not by the schema).
 // -----------------------------------------------------------------------------
 
 export const classAuthorizations = sqliteTable(
@@ -441,7 +509,7 @@ export const classAuthorizations = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// matches — matcher output. One row per (user, settlement) pair.
+// matches - matcher output. One row per (user, settlement) pair.
 // -----------------------------------------------------------------------------
 
 export const matches = sqliteTable(
@@ -476,7 +544,7 @@ export const matches = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// claims — cannot exist without an active authorization (NOT NULL + RESTRICT)
+// claims - cannot exist without an active authorization (NOT NULL + RESTRICT)
 // -----------------------------------------------------------------------------
 
 export const claims = sqliteTable(
@@ -504,7 +572,7 @@ export const claims = sqliteTable(
 
     submittedFormDataJson: text('submitted_form_data_json', { mode: 'json' }),
 
-    // captured verbatim from DOM at submit time — if this is empty, the
+    // captured verbatim from DOM at submit time - if this is empty, the
     // filer must abort before clicking submit.
     submittedAttestationText: text('submitted_attestation_text'),
 
@@ -531,7 +599,7 @@ export const claims = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// form_templates — cache form schemas keyed by administrator + signature hash
+// form_templates - cache form schemas keyed by administrator + signature hash
 // -----------------------------------------------------------------------------
 
 export const formTemplates = sqliteTable(
@@ -555,7 +623,7 @@ export const formTemplates = sqliteTable(
 );
 
 // -----------------------------------------------------------------------------
-// settings — simple key/value store for runtime config (webhook, HIBP key,
+// settings - simple key/value store for runtime config (webhook, HIBP key,
 // filer mode, etc.) so the GUI can configure everything without .env files.
 // -----------------------------------------------------------------------------
 
@@ -570,11 +638,12 @@ export const settings = sqliteTable(
   },
 );
 
-// Known setting keys — typed so the settings page can enumerate them.
+// Known setting keys - typed so the settings page can enumerate them.
 export const SETTING_KEYS = [
   'discord_webhook_url',
   'hibp_api_key',
   'claim_filer_mode',        // 'shadow' | 'live'
+  'claim_filer_live_ack',    // 'reviewed' when live mode has been explicitly acknowledged
   'claim_filer_max_per_day',
   'setup_completed',          // 'true' when wizard is done
 ] as const;
@@ -585,6 +654,7 @@ export type SettingKey = (typeof SETTING_KEYS)[number];
 // -----------------------------------------------------------------------------
 
 export type User = typeof users.$inferSelect;
+export type BillingEvent = typeof billingEvents.$inferSelect;
 export type Settlement = typeof settlements.$inferSelect;
 export type NewSettlement = typeof settlements.$inferInsert;
 export type AuditLog = typeof auditLog.$inferSelect;

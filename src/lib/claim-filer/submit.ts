@@ -11,13 +11,18 @@
 import type { Page } from 'playwright';
 import path from 'node:path';
 import fs from 'node:fs';
+import { getSettingOrEnv } from '@lib/settings';
+import { isClientFeatureEnabled } from '@lib/features';
 
 export type FilerMode = 'shadow' | 'live';
 
-export function currentMode(): FilerMode {
-  // Default is now LIVE — the bot actually submits claims.
-  // Set CLAIM_FILER_MODE=shadow to preview without submitting.
-  return process.env.CLAIM_FILER_MODE === 'shadow' ? 'shadow' : 'live';
+export async function currentMode(): Promise<FilerMode> {
+  const configured = (await getSettingOrEnv('claim_filer_mode', 'CLAIM_FILER_MODE'))?.toLowerCase();
+  if (configured !== 'live') return 'shadow';
+  if (!isClientFeatureEnabled('CLAIMBOT_FEATURE_LIVE_FILING')) return 'shadow';
+
+  const ack = await getSettingOrEnv('claim_filer_live_ack', 'CLAIM_FILER_LIVE_ACK');
+  return ack === 'reviewed' ? 'live' : 'shadow';
 }
 
 export interface EvidencePaths {

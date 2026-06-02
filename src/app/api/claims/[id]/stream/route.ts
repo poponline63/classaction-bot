@@ -4,6 +4,9 @@
 // real-time screenshots as the bot fills the form.
 
 import { onProgress, type ProgressEvent } from '@lib/claim-filer/progress';
+import { and, eq } from 'drizzle-orm';
+import { db, schema } from '@db/client';
+import { currentUserId } from '@lib/auth/current-user';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +14,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const claimId = Number(params.id);
   if (!Number.isFinite(claimId)) {
     return new Response('Invalid claim ID', { status: 400 });
+  }
+
+  const userId = await currentUserId();
+  const claimRows = await db
+    .select({ id: schema.claims.id })
+    .from(schema.claims)
+    .where(and(eq(schema.claims.id, claimId), eq(schema.claims.userId, userId)))
+    .limit(1);
+  if (!claimRows[0]) {
+    return new Response('Claim not found', { status: 404 });
   }
 
   const encoder = new TextEncoder();

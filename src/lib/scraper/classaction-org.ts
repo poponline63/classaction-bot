@@ -7,7 +7,7 @@
 //   - a "You may be included..." paragraph that gives us the class definition
 //     and often the class period
 //
-// We parse all cards from that single page — no follow-up detail fetches.
+// We parse all cards from that single page - no follow-up detail fetches.
 
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
@@ -34,6 +34,15 @@ const ParsedSettlement = z.object({
 function parseDateOrNull(text: string | undefined): Date | null {
   if (!text) return null;
   const cleaned = text.replace(/(\d+)(st|nd|rd|th)/gi, '$1').trim();
+  const numeric = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (numeric) {
+    const month = Number(numeric[1]);
+    const day = Number(numeric[2]);
+    const rawYear = Number(numeric[3]);
+    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+    const d = new Date(year, month - 1, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
   const d = new Date(cleaned);
   return isNaN(d.getTime()) ? null : d;
 }
@@ -76,7 +85,7 @@ export function parseCard(
   const caseName = $card.find('h3').first().text().trim();
   if (!caseName) return null;
 
-  // Extract the admin site URL — it's the anchor whose text is the title OR
+  // Extract the admin site URL - it's the anchor whose text is the title OR
   // the "Visit Official Settlement Website" link.
   let claimFormUrl: string | null = null;
   $card.find('a').each((_i, el) => {
@@ -110,17 +119,20 @@ export function parseCard(
   const classPeriodStart = parseDateOrNull(cpMatch?.[1]);
   const classPeriodEnd = parseDateOrNull(cpMatch?.[2]);
 
-  // Deadline detection — the index cards rarely carry a reliable claim
+  // Deadline detection - the index cards rarely carry a reliable claim
   // deadline (it lives on the administrator site). We only accept a date
   // if (a) it appears directly adjacent to a deadline-style phrase and
   // (b) it is in the future. Otherwise we leave deadline null and let
-  // the Phase 3 enricher fill it in from the admin site.
-  const deadlineRe =
-    /(?:claim (?:filing )?deadline|deadline to file|file (?:your )?claim by|must (?:be )?filed? by|filing must be|submission deadline)[^.]*?(\w+ \d{1,2},? \d{4})/i;
+  // the enrichment pass fill it in from the admin site.
+  const datePattern = String.raw`(?:\d{1,2}\/\d{1,2}\/(?:\d{2}|\d{4})|\w+ \d{1,2},? \d{4})`;
+  const deadlineRe = new RegExp(
+    String.raw`(?:claim (?:filing )?deadline|deadline to file|file (?:your )?claim by|must (?:be )?filed? by|filing must be|submission deadline|deadline)\s*:?\s*(?:is|of|by)?[^.\n]*?\b(${datePattern})\b`,
+    'i',
+  );
   const deadlineMatch = $card.text().match(deadlineRe);
   let deadline = parseDateOrNull(deadlineMatch?.[1]);
   if (deadline && deadline.getTime() < Date.now()) {
-    // Scraped a past date — almost certainly a class period endpoint, not
+    // Scraped a past date - almost certainly a class period endpoint, not
     // the real claim deadline. Drop it.
     deadline = null;
   }
@@ -142,7 +154,7 @@ export function parseCard(
   const defendant = extractDefendant(caseName) || caseName;
 
   // For the sourceUrl we use an anchor that points back to classaction.org's
-  // card — the slug id on the wrapper div. Fall back to the listing page if
+  // card - the slug id on the wrapper div. Fall back to the listing page if
   // nothing specific is found.
   const sourceUrl = fallbackSlug
     ? `${BASE}/settlements#${fallbackSlug}`

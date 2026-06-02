@@ -1,4 +1,4 @@
-// Dev helper: dump DB state so we can verify Phase 1 ingestion.
+// Dev helper: dump DB state so we can verify ingestion.
 import 'dotenv/config';
 import { db, schema } from '../src/db/client';
 
@@ -7,7 +7,7 @@ async function main() {
   console.log(`settlements: ${rows.length}`);
   for (const r of rows) {
     console.log(
-      ` - #${r.id} [${r.source}] ${r.caseName} | defendant=${r.defendant} | category=${r.category} | proof=${r.proofRequired} | deadline=${r.deadline?.toISOString().slice(0, 10) ?? '—'}`,
+      ` - #${r.id} [${r.source}] ${r.caseName} | defendant=${r.defendant} | category=${r.category} | proof=${r.proofRequired} | deadline=${r.deadline?.toISOString().slice(0, 10) ?? 'none'}`,
     );
   }
   const audit = await db.select().from(schema.auditLog);

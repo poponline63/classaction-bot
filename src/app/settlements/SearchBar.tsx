@@ -1,7 +1,8 @@
-// @ts-nocheck
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface SearchResult {
   id: number;
@@ -15,28 +16,54 @@ interface SearchResult {
   deadline: string | null;
 }
 
+const suggestions = [
+  'Amazon',
+  'Google',
+  'data breach',
+  'vehicle',
+  'toothpaste',
+  'Hyundai',
+  'Kia',
+  'LastPass',
+  'Robinhood',
+  'Grubhub',
+  'insurance',
+  'bank',
+];
+
+function normalizeResults(value: unknown): SearchResult[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is SearchResult => (
+    typeof item === 'object'
+    && item !== null
+    && typeof (item as SearchResult).id === 'number'
+    && typeof (item as SearchResult).caseName === 'string'
+    && typeof (item as SearchResult).classDefinition === 'string'
+  ));
+}
+
 export default function SearchBar() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced search
   useEffect(() => {
     if (query.length < 2) {
       setResults([]);
       setOpen(false);
       return;
     }
-    clearTimeout(timerRef.current);
+
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/settlements/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        setResults(data);
+        const response = await fetch(`/api/settlements/search?q=${encodeURIComponent(query)}`);
+        const data: unknown = await response.json();
+        setResults(normalizeResults(data));
         setOpen(true);
       } catch {
         setResults([]);
@@ -44,128 +71,74 @@ export default function SearchBar() {
         setLoading(false);
       }
     }, 300);
-    return () => clearTimeout(timerRef.current);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [query]);
 
-  // Close dropdown on outside click
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const handler = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Suggested searches
-  const suggestions = [
-    'Amazon', 'Google', 'data breach', 'vehicle', 'toothpaste',
-    'Hyundai', 'Kia', 'LastPass', 'Robinhood', 'Grubhub',
-    'beef', 'sealy', 'insurance', 'bank', 'hospital',
-  ];
-
   return (
-    <div ref={ref} style={{ position: 'relative', marginBottom: 16 }}>
-      <div style={{ position: 'relative' }}>
+    <div ref={ref} className="settlement-search">
+      <div className="search-input-wrap">
+        <Search aria-hidden="true" size={17} />
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search settlements... (e.g. Amazon, data breach, vehicle)"
-          style={{
-            width: '100%',
-            padding: '12px 16px 12px 40px',
-            background: '#12151a',
-            border: '1px solid #1f242c',
-            borderRadius: 12,
-            color: '#e6e8eb',
-            fontSize: 14,
-            outline: 'none',
-          }}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search settlements by company, category, or incident"
           onFocus={() => results.length > 0 && setOpen(true)}
         />
-        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#8a94a6', fontSize: 16 }}>
-          🔍
-        </span>
-        {loading && (
-          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#8a94a6', fontSize: 12 }}>
-            searching...
-          </span>
-        )}
+        {loading && <span className="search-status">Searching</span>}
       </div>
 
-      {/* Suggestion chips */}
       {!query && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-          <span style={{ fontSize: 11, color: '#8a94a6', marginRight: 4 }}>Try:</span>
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => setQuery(s)}
-              style={{
-                padding: '3px 10px', borderRadius: 12, fontSize: 11,
-                background: '#1c2230', color: '#8a94a6', border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {s}
+        <div className="search-suggestions">
+          <span>Try</span>
+          {suggestions.map((suggestion) => (
+            <button key={suggestion} type="button" onClick={() => setQuery(suggestion)}>
+              {suggestion}
             </button>
           ))}
         </div>
       )}
 
-      {/* Results dropdown */}
       {open && results.length > 0 && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-          background: '#12151a', border: '1px solid #1f242c', borderRadius: 12,
-          maxHeight: 400, overflowY: 'auto', marginTop: 4,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        }}>
-          <div style={{ padding: '8px 14px', fontSize: 11, color: '#8a94a6', borderBottom: '1px solid #1f242c' }}>
-            {results.length} result{results.length !== 1 ? 's' : ''} — click to view details
+        <div className="search-results">
+          <div className="search-results-head">
+            {results.length} result{results.length === 1 ? '' : 's'}. Select a settlement to view details.
           </div>
-          {results.map((r) => (
-            <a
-              key={r.id}
-              href={`/settlements/${r.id}`}
-              style={{
-                display: 'block', padding: '12px 14px', textDecoration: 'none',
-                color: '#e6e8eb', borderBottom: '1px solid #1f242c',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#1c2230')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{r.caseName}</span>
-                {r.payoutEstimate && (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-                    {r.payoutEstimate}
-                  </span>
+          {results.map((result) => (
+            <Link key={result.id} href={`/settlements/${result.id}`} className="search-result">
+              <div className="search-result-title">
+                <span>{result.caseName}</span>
+                {result.payoutEstimate && <strong>{result.payoutEstimate}</strong>}
+              </div>
+              <div className="status-row">
+                <span className="tag">{result.category.toLowerCase().replace(/_/g, ' ')}</span>
+                {result.proofRequired ? (
+                  <span className="tag warn">Proof required</span>
+                ) : (
+                  <span className="tag good">No proof required</span>
                 )}
+                {result.claimFormUrl && <span className="tag blue">Claim form available</span>}
               </div>
-              <div style={{ fontSize: 11, color: '#8a94a6', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="tag" style={{ fontSize: 10 }}>{r.category.toLowerCase().replace(/_/g, ' ')}</span>
-                {r.proofRequired
-                  ? <span className="tag warn" style={{ fontSize: 10 }}>proof required</span>
-                  : <span className="tag good" style={{ fontSize: 10 }}>no proof</span>
-                }
-                {r.claimFormUrl && <span className="tag good" style={{ fontSize: 10 }}>has form</span>}
-              </div>
-              <div style={{ fontSize: 11, color: '#666', marginTop: 4, lineHeight: 1.4 }}>
-                {r.classDefinition.slice(0, 120)}...
-              </div>
-            </a>
+              <p>{result.classDefinition.slice(0, 130)}...</p>
+            </Link>
           ))}
         </div>
       )}
+
       {open && results.length === 0 && query.length >= 2 && !loading && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0,
-          background: '#12151a', border: '1px solid #1f242c', borderRadius: 12,
-          padding: '16px 14px', marginTop: 4, textAlign: 'center', color: '#8a94a6', fontSize: 13,
-        }}>
-          No settlements found for "{query}"
+        <div className="search-empty">
+          No settlements found for "{query}".
         </div>
       )}
     </div>

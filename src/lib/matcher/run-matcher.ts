@@ -11,6 +11,7 @@ import { eq, and } from 'drizzle-orm';
 import { runRules } from './verdict';
 import type { MatcherContext } from './types';
 import { writeAudit } from '@lib/audit';
+import { isSettlementCategoryEnabled } from '@lib/features';
 
 export interface MatcherResult {
   settlementsProcessed: number;
@@ -54,7 +55,8 @@ export async function runMatcher(userId: number): Promise<MatcherResult> {
     .from(schema.classAuthorizations)
     .where(eq(schema.classAuthorizations.userId, userId));
 
-  const settlements = await db.select().from(schema.settlements);
+  const settlements = (await db.select().from(schema.settlements))
+    .filter((settlement) => isSettlementCategoryEnabled(settlement.category));
   result.settlementsProcessed = settlements.length;
 
   for (const settlement of settlements) {
@@ -149,6 +151,22 @@ export async function runMatcher(userId: number): Promise<MatcherResult> {
       );
     }
   }
+
+  await writeAudit({
+    userId,
+    eventType: 'MATCHER_RUN_COMPLETED',
+    entityType: 'user',
+    entityId: userId,
+    payload: {
+      settlementsProcessed: result.settlementsProcessed,
+      matchesInserted: result.matchesInserted,
+      matchesUpdated: result.matchesUpdated,
+      verdictCounts: result.verdictCounts,
+      verdictsChanged: result.verdictsChanged,
+      errorCount: result.errors.length,
+    },
+    actor: 'matcher',
+  });
 
   return result;
 }

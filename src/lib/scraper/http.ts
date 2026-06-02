@@ -2,10 +2,9 @@
 // We use `undici` (built into Node) rather than shipping a second HTTP lib.
 
 import { fetch } from 'undici';
+import { getScraperUserAgent } from './user-agent';
 
-const USER_AGENT =
-  process.env.SCRAPER_USER_AGENT ??
-  'ClassActionBot/0.1 (+https://github.com/your/project)';
+const USER_AGENT = getScraperUserAgent();
 
 const BASE_DELAY_MS = Number(process.env.SCRAPER_RATE_LIMIT_MS ?? 3000);
 
