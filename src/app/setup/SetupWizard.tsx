@@ -83,15 +83,18 @@ export default function SetupWizard({
   breachImportEnabled,
   settlementSearchEnabled,
   subscription,
+  startWithProfile = false,
 }: {
   breachImportEnabled: boolean;
   settlementSearchEnabled: boolean;
   subscription: SetupSubscriptionGate;
+  startWithProfile?: boolean;
 }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const steps = (breachImportEnabled ? ALL_STEPS : ALL_STEPS.filter((s) => s.key !== 'breaches'))
+  const baseSteps = startWithProfile ? ALL_STEPS.filter((s) => s.key !== 'welcome') : ALL_STEPS;
+  const steps = (breachImportEnabled ? baseSteps : baseSteps.filter((s) => s.key !== 'breaches'))
     .map((s) => (
       s.key === 'done' && !settlementSearchEnabled
         ? { ...s, detail: 'Start scoped review in shadow mode.' }

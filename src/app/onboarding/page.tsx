@@ -5,8 +5,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
-  Gauge,
-  HelpCircle,
   LockKeyhole,
   SearchCheck,
   ShieldCheck,
@@ -14,7 +12,9 @@ import {
 } from 'lucide-react';
 import { db, schema } from '@db/client';
 import { currentUserId } from '@lib/auth/current-user';
+import { getUserSubscription } from '@lib/billing/entitlements';
 import { isClientFeatureEnabled } from '@lib/features';
+import SetupWizard from '../setup/SetupWizard';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +22,7 @@ export default async function OnboardingPage() {
   const userId = await currentUserId();
   const breachImportEnabled = isClientFeatureEnabled('CLAIMBOT_FEATURE_BREACH_IMPORT');
   const settlementSearchEnabled = isClientFeatureEnabled('CLAIMBOT_FEATURE_SETTLEMENT_SEARCH');
+  const subscription = await getUserSubscription(userId);
 
   const [profile] = await db
     .select()
@@ -59,70 +60,34 @@ export default async function OnboardingPage() {
   const reviewReady = matches > 0;
   const permissionsReady = activePermissions > 0;
   const completedSteps = [factsReady, permissionsReady, reviewReady].filter(Boolean).length;
-  const primaryAction = !factsReady
-    ? { href: '/setup', label: 'Start with facts' }
-    : !permissionsReady
-      ? { href: '/permissions', label: 'Choose permissions' }
-      : !reviewReady
-        ? { href: settlementSearchEnabled ? '/settlements' : '/review', label: 'Find matches' }
-        : { href: '/review', label: 'Review matches' };
 
   const onboardingSteps = [
     {
-      title: 'Add your facts',
-      detail: 'Save your name, contact info, purchases, subscriptions, and notices you know are true.',
-      href: '/setup',
-      action: 'Start with facts',
+      title: 'Fill out basic info',
+      detail: 'Start with name, contact details, and a mailing address so ClaimBot can compare records correctly.',
+      href: '#onboarding-intake',
+      action: 'Enter basic info',
       icon: UserRound,
       status: factsReady ? 'done' : 'current',
-      statusLabel: factsReady ? 'Started' : 'Start here',
+      statusLabel: profileComplete ? 'Saved' : 'Start here',
     },
     {
-      title: 'Choose permissions',
-      detail: 'Tell ClaimBot which claim types it may review. Categories stay blocked until you allow them.',
-      href: '/permissions',
-      action: 'Choose permissions',
-      icon: ClipboardCheck,
-      status: permissionsReady ? 'done' : factsReady ? 'current' : 'locked',
-      statusLabel: permissionsReady ? 'Ready' : factsReady ? 'Needs choice' : 'After facts',
+      title: 'Add purchase or notice facts',
+      detail: 'Add products, subscriptions, breach notices, or other facts that can support possible matches.',
+      href: '#onboarding-intake',
+      action: 'Add facts',
+      icon: FileText,
+      status: evidenceCount > 0 ? 'done' : profileComplete ? 'current' : 'locked',
+      statusLabel: evidenceCount > 0 ? 'Saved' : profileComplete ? 'Next' : 'After basic info',
     },
     {
-      title: 'Review matches',
-      detail: settlementSearchEnabled
-        ? 'ClaimBot compares your saved facts with claim sources, then shows what looks relevant.'
-        : 'ClaimBot reviews assigned claim opportunities against the facts saved in your account.',
-      href: settlementSearchEnabled ? '/settlements' : '/review',
-      action: settlementSearchEnabled ? 'Find claims' : 'Open review',
+      title: 'Check possible matches',
+      detail: 'ClaimBot compares saved facts with claim records and shows claims you may qualify for.',
+      href: factsReady && permissionsReady ? (settlementSearchEnabled ? '/settlements' : '/review') : '#onboarding-intake',
+      action: factsReady && permissionsReady ? 'Check matches' : 'Finish intake',
       icon: SearchCheck,
       status: !factsReady || !permissionsReady ? 'locked' : reviewReady ? 'done' : 'current',
-      statusLabel: !factsReady || !permissionsReady ? 'After setup' : reviewReady ? 'Matches found' : 'Next step',
-    },
-  ];
-
-  const pageGuide = [
-    {
-      title: 'Profile',
-      detail: 'Where your name, contact details, purchases, subscriptions, and notices live.',
-      href: '/profile',
-      icon: UserRound,
-    },
-    {
-      title: 'Eligibility',
-      detail: 'A plain view of what is missing before a match can move forward.',
-      href: '/eligibility',
-      icon: Gauge,
-    },
-    {
-      title: 'Review',
-      detail: 'Where possible matches are checked before anything becomes a tracked claim.',
-      href: '/review',
-      icon: ShieldCheck,
-    },
-    {
-      title: 'Claims',
-      detail: 'Where approved claims are tracked after review.',
-      href: '/claims',
-      icon: CheckCircle2,
+      statusLabel: !factsReady || !permissionsReady ? 'After intake' : reviewReady ? 'Matches found' : 'Ready to check',
     },
   ];
 
@@ -131,17 +96,17 @@ export default async function OnboardingPage() {
       <section className="onboarding-welcome" aria-label="ClaimBot onboarding">
         <div className="onboarding-welcome-copy">
           <div className="eyebrow">Start here</div>
-          <h1>ClaimBot has one simple job: help you review possible claims.</h1>
+          <h1>Fill out basic info. ClaimBot checks for claims you may match.</h1>
           <p>
-            Add facts you know are true, choose what ClaimBot may review, then check possible matches.
-            Nothing is submitted from onboarding.
+            Onboarding is the intake form. Add real facts about you, purchases, subscriptions,
+            and notices, then ClaimBot can compare them against claim opportunities.
           </p>
           <div className="onboarding-welcome-actions">
-            <Link className="btn" href={primaryAction.href}>
-              {primaryAction.label}
+            <Link className="btn" href="#onboarding-intake">
+              Fill out basic info
               <ArrowRight aria-hidden="true" size={16} />
             </Link>
-            <Link className="btn ghost" href="#how-it-works">How it works</Link>
+            <Link className="btn ghost" href="#how-it-works">What happens next</Link>
           </div>
         </div>
         <div className="onboarding-progress-panel" aria-label="Onboarding progress">
@@ -167,32 +132,33 @@ export default async function OnboardingPage() {
         <div>
           <strong>Nothing is submitted from onboarding.</strong>
           <span>
-            Onboarding only saves facts, starts review, and helps you choose what ClaimBot may handle.
+            Onboarding saves facts and permissions so ClaimBot can find possible matches.
+            It does not guarantee eligibility or file a claim from this page.
           </span>
         </div>
       </section>
 
       <section className="onboarding-explainer" id="how-it-works" aria-label="How ClaimBot works">
         <div className="onboarding-explainer-lead">
-          <div className="eyebrow">How it works</div>
-          <h2>Think of ClaimBot as a careful review desk.</h2>
+          <div className="eyebrow">What happens next</div>
+          <h2>Basic info turns into possible claim matches.</h2>
           <p>
-            It does not decide legal eligibility for you. It organizes facts, highlights possible matches,
-            and keeps uncertain or proof-heavy claims in review.
+            ClaimBot looks for possible matches based on the information you save. If a claim needs proof,
+            has missing facts, or needs permission, it stays in review.
           </p>
         </div>
         <div className="onboarding-explainer-grid">
           <div>
-            <strong>1. You add facts</strong>
-            <span>Name, contact info, purchases, subscriptions, data notices, or proof notes.</span>
+            <strong>1. You fill out intake</strong>
+            <span>Name, contact info, purchases, subscriptions, data notices, and proof notes.</span>
           </div>
           <div>
-            <strong>2. ClaimBot compares</strong>
-            <span>Saved facts are checked against claim records and permission settings.</span>
+            <strong>2. ClaimBot checks fit</strong>
+            <span>Saved facts are compared with claim records and permission settings.</span>
           </div>
           <div>
-            <strong>3. You review</strong>
-            <span>Only matches you approve can become tracked claims.</span>
+            <strong>3. You see possible matches</strong>
+            <span>ClaimBot shows claims you may qualify for and what still needs review.</span>
           </div>
         </div>
       </section>
@@ -222,28 +188,27 @@ export default async function OnboardingPage() {
         ))}
       </section>
 
-      <section className="onboarding-page-map" aria-label="Where to go next">
-        <div className="onboarding-page-map-head">
+      <section className="onboarding-intake-panel" id="onboarding-intake" aria-label="Onboarding intake form">
+        <div className="onboarding-intake-head">
           <div>
-            <div className="eyebrow">What the main pages mean</div>
-            <h2>You only need four customer pages at first.</h2>
+            <div className="eyebrow">Intake form</div>
+            <h2>Start by filling out the basic information below.</h2>
+            <p>
+              After intake, ClaimBot can check for possible matches. The result is a review list,
+              not a legal guarantee or payout promise.
+            </p>
           </div>
-          <Link className="btn ghost sm" href="/help">
-            <HelpCircle aria-hidden="true" size={15} />
-            Get help
-          </Link>
         </div>
-        <div className="onboarding-page-map-grid">
-          {pageGuide.map(({ detail, href, icon: Icon, title }) => (
-            <Link href={href} key={title}>
-              <Icon aria-hidden="true" size={18} />
-              <span>
-                <strong>{title}</strong>
-                <small>{detail}</small>
-              </span>
-            </Link>
-          ))}
-        </div>
+        <SetupWizard
+          breachImportEnabled={breachImportEnabled}
+          settlementSearchEnabled={settlementSearchEnabled}
+          startWithProfile
+          subscription={{
+            automationEnabled: subscription.automationEnabled,
+            plan: subscription.plan,
+            status: subscription.status,
+          }}
+        />
       </section>
 
       <div className="trust-strip onboarding-safeguards" aria-label="Onboarding safeguards">
@@ -268,10 +233,10 @@ export default async function OnboardingPage() {
       <section className="onboarding-next-panel" aria-label="What happens after onboarding">
         <div>
           <div className="eyebrow">After onboarding</div>
-          <h2>Keep using the same three-part workflow.</h2>
+          <h2>ClaimBot can start checking for possible matches.</h2>
           <p>
             Add facts when something changes, review possible matches when ClaimBot finds them,
-            and track only the claims you want to move forward.
+            and track only the claims you approve.
           </p>
         </div>
         <div className="onboarding-next-list">

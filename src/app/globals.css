@@ -14177,6 +14177,48 @@ tr:last-child td { border-bottom: 0; }
   margin-bottom: 18px;
 }
 
+.onboarding-intake-panel {
+  background: rgba(17, 24, 39, 0.72);
+  border: 1px solid rgba(184, 146, 255, 0.18);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 18px;
+}
+
+.onboarding-intake-head {
+  align-items: end;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.onboarding-intake-head h2 {
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.12;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.onboarding-intake-head p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.58;
+  margin: 8px 0 0;
+  max-width: 760px;
+}
+
+.onboarding-intake-panel > .page-header {
+  background: rgba(15, 17, 23, 0.56);
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
 .onboarding-next-panel {
   background: rgba(17, 24, 39, 0.78);
   border: 1px solid var(--border);
@@ -14251,6 +14293,7 @@ tr:last-child td { border-bottom: 0; }
   .onboarding-quickstart,
   .onboarding-step-card,
   .onboarding-page-map,
+  .onboarding-intake-panel,
   .onboarding-next-panel {
     padding: 14px;
   }
