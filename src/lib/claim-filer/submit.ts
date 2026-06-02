@@ -13,6 +13,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { getSettingOrEnv } from '@lib/settings';
 import { isClientFeatureEnabled } from '@lib/features';
+import { getRuntimeDataDir } from '@lib/runtime-data-dir';
 
 export type FilerMode = 'shadow' | 'live';
 
@@ -32,11 +33,7 @@ export interface EvidencePaths {
 }
 
 export function evidenceDir(claimId: number): string {
-  const dir = path.resolve(
-    process.env.DATA_DIR || path.join(process.cwd(), 'data'),
-    'evidence',
-    String(claimId),
-  );
+  const dir = path.resolve(getRuntimeDataDir(), 'evidence', String(claimId));
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return dir;
 }

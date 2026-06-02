@@ -14,11 +14,9 @@ import { chromium, type BrowserContext } from 'playwright';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { Administrator } from '@db/schema';
+import { getRuntimeDataDir } from '@lib/runtime-data-dir';
 
-const PROFILE_ROOT = path.resolve(
-  process.env.DATA_DIR || path.join(process.cwd(), 'data'),
-  'browser-profiles',
-);
+const PROFILE_ROOT = path.resolve(getRuntimeDataDir(), 'browser-profiles');
 
 const cache = new Map<Administrator, BrowserContext>();
 

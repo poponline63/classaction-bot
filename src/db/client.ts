@@ -7,7 +7,7 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import path from 'node:path';
 import fs from 'node:fs';
-import os from 'node:os';
+import { getRuntimeDataDir } from '@lib/runtime-data-dir';
 import * as schema from './schema';
 
 // The desktop launcher sets DATA_DIR; dev mode falls back to ./data.
@@ -15,11 +15,7 @@ export const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
   : path.resolve(process.cwd(), 'data');
 
-const singleUserHostedFileDb = process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true';
-const hostedRuntimeFileDb = process.env.NETLIFY === 'true' && singleUserHostedFileDb && !process.env.DATABASE_URL;
-const runtimeDataDir = hostedRuntimeFileDb
-  ? path.join(os.tmpdir(), 'claimbot-single-user')
-  : DATA_DIR;
+const runtimeDataDir = getRuntimeDataDir();
 const DB_URL_RAW = process.env.DATABASE_URL ?? `file:${path.join(runtimeDataDir, 'classaction.db')}`;
 
 let dbUrl = DB_URL_RAW;
