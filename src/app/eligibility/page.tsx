@@ -169,6 +169,7 @@ export default async function EligibilityPage() {
       alreadyQueued: Boolean(claim),
     }).label === 'Automation plan needed'
   )).length;
+  const firstRunIncomplete = !profileComplete || evidenceCount === 0 || activeAuthorizations.length === 0;
 
   const intakeGates = [
     {
@@ -278,11 +279,12 @@ export default async function EligibilityPage() {
 
       <section className="eligibility-simple-guide" aria-label="How to use eligibility">
         <div>
-          <div className="eyebrow">New user path</div>
-          <h2>Do these three things in order.</h2>
+          <div className="eyebrow">{firstRunIncomplete ? 'New user path' : 'Claim fit path'}</div>
+          <h2>{firstRunIncomplete ? 'Start with onboarding before judging matches.' : 'Use this page to see what still needs review.'}</h2>
           <p>
-            You do not need to understand every rule first. Start with onboarding,
-            then choose claim types, then review matches when ClaimBot finds them.
+            {firstRunIncomplete
+              ? 'You do not need every rule first. Add facts, choose claim types, then review matches when ClaimBot finds them.'
+              : 'ClaimBot shows ready matches, proof blockers, missing permissions, and plan requirements before tracking starts.'}
           </p>
         </div>
         <div className="eligibility-simple-steps">

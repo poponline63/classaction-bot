@@ -13789,6 +13789,169 @@ tr:last-child td { border-bottom: 0; }
   margin: 8px 0 0;
 }
 
+.onboarding-welcome {
+  align-items: stretch;
+  background:
+    linear-gradient(135deg, rgba(184, 146, 255, 0.18), rgba(34, 197, 94, 0.08) 48%, rgba(15, 17, 23, 0.96)),
+    #151824;
+  border: 1px solid rgba(184, 146, 255, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.28fr);
+  margin-bottom: 16px;
+  overflow: hidden;
+  padding: 30px;
+  position: relative;
+}
+
+.onboarding-welcome::before {
+  background: linear-gradient(90deg, rgba(184, 146, 255, 0.48), rgba(34, 197, 94, 0.18));
+  content: "";
+  height: 1px;
+  inset: 0 0 auto;
+  position: absolute;
+}
+
+.onboarding-welcome-copy {
+  align-content: center;
+  display: grid;
+}
+
+.onboarding-welcome h1 {
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 46px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 6px 0 12px;
+  max-width: 820px;
+  text-wrap: balance;
+}
+
+.onboarding-welcome p {
+  color: #c5cad6;
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 680px;
+  text-wrap: pretty;
+}
+
+.onboarding-welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.onboarding-progress-panel {
+  align-content: center;
+  background: rgba(11, 13, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  min-height: 190px;
+  padding: 18px;
+}
+
+.onboarding-progress-panel span,
+.onboarding-progress-panel small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.onboarding-progress-panel strong {
+  color: var(--accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.onboarding-progress-bars {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 10px;
+}
+
+.onboarding-progress-bars i {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  height: 8px;
+}
+
+.onboarding-progress-bars i.done {
+  background: #22c55e;
+}
+
+.onboarding-explainer {
+  background: rgba(26, 29, 39, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 0.76fr) minmax(320px, 1fr);
+  margin: 0 0 16px;
+  padding: 22px;
+}
+
+.onboarding-explainer h2,
+.onboarding-page-map h2,
+.onboarding-next-panel h2 {
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.12;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.onboarding-explainer p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+  max-width: 680px;
+}
+
+.onboarding-explainer-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.onboarding-explainer-grid div {
+  background: rgba(15, 17, 23, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  display: grid;
+  gap: 7px;
+  min-height: 124px;
+  padding: 14px;
+}
+
+.onboarding-explainer-grid strong {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.onboarding-explainer-grid span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .onboarding-quickstart {
   align-items: stretch;
   background:
@@ -13881,6 +14044,12 @@ tr:last-child td { border-bottom: 0; }
   border-color: rgba(74, 222, 128, 0.28);
 }
 
+.onboarding-step-card.done .onboarding-step-number {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.28);
+  color: #bbf7d0;
+}
+
 .onboarding-step-card.locked {
   opacity: 0.82;
 }
@@ -13939,6 +14108,75 @@ tr:last-child td { border-bottom: 0; }
   gap: 6px;
 }
 
+.onboarding-page-map {
+  background: rgba(17, 24, 39, 0.78);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 18px;
+}
+
+.onboarding-page-map-head {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.onboarding-page-map-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.onboarding-page-map-grid a {
+  align-items: flex-start;
+  background: rgba(11, 13, 18, 0.48);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: inherit;
+  display: flex;
+  gap: 11px;
+  min-height: 116px;
+  padding: 13px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.onboarding-page-map-grid a:hover {
+  background: rgba(37, 40, 54, 0.86);
+  border-color: rgba(184, 146, 255, 0.25);
+}
+
+.onboarding-page-map-grid svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.onboarding-page-map-grid strong,
+.onboarding-page-map-grid small {
+  display: block;
+}
+
+.onboarding-page-map-grid strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.onboarding-page-map-grid small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.42;
+  margin-top: 5px;
+}
+
+.onboarding-safeguards {
+  margin-bottom: 18px;
+}
+
 .onboarding-next-panel {
   background: rgba(17, 24, 39, 0.78);
   border: 1px solid var(--border);
@@ -13989,9 +14227,16 @@ tr:last-child td { border-bottom: 0; }
 }
 
 @media (max-width: 980px) {
+  .onboarding-welcome,
+  .onboarding-explainer,
   .onboarding-quickstart,
   .onboarding-step-grid,
+  .onboarding-page-map-grid,
   .onboarding-next-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-explainer-grid {
     grid-template-columns: 1fr;
   }
 
@@ -14001,10 +14246,44 @@ tr:last-child td { border-bottom: 0; }
 }
 
 @media (max-width: 640px) {
+  .onboarding-welcome,
+  .onboarding-explainer,
   .onboarding-quickstart,
   .onboarding-step-card,
+  .onboarding-page-map,
   .onboarding-next-panel {
     padding: 14px;
+  }
+
+  .onboarding-welcome h1 {
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  .onboarding-welcome p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .onboarding-progress-panel {
+    min-height: 124px;
+  }
+
+  .onboarding-progress-panel strong {
+    font-size: 42px;
+  }
+
+  .onboarding-page-map-head {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .onboarding-page-map-head .btn {
+    width: 100%;
+  }
+
+  .onboarding-page-map-grid a {
+    min-height: auto;
   }
 }
 
