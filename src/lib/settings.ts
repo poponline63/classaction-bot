@@ -3,10 +3,18 @@
 // env files for common runtime configuration.
 
 import { db, schema } from '@db/client';
+import { ensureSingleUser } from '@db/seed';
 import type { SettingKey } from '@db/schema';
 import { eq } from 'drizzle-orm';
 
+async function ensureSingleUserSettingsStore() {
+  if (process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true') {
+    await ensureSingleUser();
+  }
+}
+
 export async function getSetting(key: SettingKey): Promise<string | null> {
+  await ensureSingleUserSettingsStore();
   const rows = await db
     .select()
     .from(schema.settings)
@@ -16,6 +24,7 @@ export async function getSetting(key: SettingKey): Promise<string | null> {
 }
 
 export async function setSetting(key: SettingKey, value: string): Promise<void> {
+  await ensureSingleUserSettingsStore();
   await db
     .insert(schema.settings)
     .values({ key, value, updatedAt: new Date() })
@@ -26,6 +35,7 @@ export async function setSetting(key: SettingKey, value: string): Promise<void> 
 }
 
 export async function getAllSettings(): Promise<Record<string, string>> {
+  await ensureSingleUserSettingsStore();
   const rows = await db.select().from(schema.settings);
   const out: Record<string, string> = {};
   for (const row of rows) out[row.key] = row.value;
