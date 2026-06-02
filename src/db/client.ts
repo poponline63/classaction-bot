@@ -15,8 +15,6 @@ export const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
   : path.resolve(process.cwd(), 'data');
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
 const singleUserHostedFileDb = process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true';
 const hostedRuntimeFileDb = process.env.NETLIFY === 'true' && singleUserHostedFileDb && !process.env.DATABASE_URL;
 const runtimeDataDir = hostedRuntimeFileDb
