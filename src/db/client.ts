@@ -7,6 +7,7 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import * as schema from './schema';
 
 // The desktop launcher sets DATA_DIR; dev mode falls back to ./data.
@@ -16,7 +17,12 @@ export const DATA_DIR = process.env.DATA_DIR
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-const DB_URL_RAW = process.env.DATABASE_URL ?? `file:${path.join(DATA_DIR, 'classaction.db')}`;
+const singleUserHostedFileDb = process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true';
+const hostedRuntimeFileDb = process.env.NETLIFY === 'true' && singleUserHostedFileDb && !process.env.DATABASE_URL;
+const runtimeDataDir = hostedRuntimeFileDb
+  ? path.join(os.tmpdir(), 'claimbot-single-user')
+  : DATA_DIR;
+const DB_URL_RAW = process.env.DATABASE_URL ?? `file:${path.join(runtimeDataDir, 'classaction.db')}`;
 
 let dbUrl = DB_URL_RAW;
 if (dbUrl.startsWith('file:')) {
@@ -28,7 +34,8 @@ if (dbUrl.startsWith('file:')) {
 }
 
 const authToken = process.env.DATABASE_AUTH_TOKEN ?? process.env.TURSO_AUTH_TOKEN;
-const client = createClient({ url: dbUrl, authToken });
+export const client = createClient({ url: dbUrl, authToken });
 export const db = drizzle(client, { schema });
+export const databaseUrl = dbUrl;
 export { schema };
 export * from './schema';

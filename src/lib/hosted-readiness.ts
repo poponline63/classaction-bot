@@ -27,6 +27,7 @@ export type HostedReadinessInput = {
   paidBillingRequired?: boolean;
   databaseSchemaReady?: boolean;
   databaseSchemaFailures?: string[];
+  singleUserFileDb?: boolean;
 };
 
 export type HostedReadinessItem = {
@@ -77,6 +78,7 @@ export function evaluateHostedReadiness(input: HostedReadinessInput): HostedRead
   const databaseSchemaReady = input.databaseSchemaReady ?? true;
   const databaseSchemaFailures = input.databaseSchemaFailures ?? [];
   const legalReviewAck = input.legalReviewAck ?? '';
+  const singleUserFileDb = input.singleUserFileDb ?? false;
   const workerRuntime = input.workerRuntime ?? '';
   const workerRuntimeReceipt = input.workerRuntimeReceipt ?? '';
   const workerRuntimeConfigured = ['persistent-worker', 'dedicated-worker', 'external-worker', 'background-worker', 'scheduled-worker', 'github-actions-scheduler'].includes(workerRuntime);
@@ -90,7 +92,15 @@ export function evaluateHostedReadiness(input: HostedReadinessInput): HostedRead
   });
   const items: HostedReadinessItem[] = [];
 
-  if (!databaseUrl && isHosted) {
+  if (!databaseUrl && isHosted && singleUserFileDb) {
+    items.push({
+      key: 'database',
+      label: 'Persistent database',
+      status: 'warn',
+      detail: 'Single-user website test mode will use temporary file storage instead of hosted persistent storage.',
+      action: 'Use this only for private testing. Add a hosted DATABASE_URL before inviting clients or relying on saved production data.',
+    });
+  } else if (!databaseUrl && isHosted) {
     items.push({
       key: 'database',
       label: 'Persistent database',
@@ -113,6 +123,14 @@ export function evaluateHostedReadiness(input: HostedReadinessInput): HostedRead
       status: 'fail',
       detail: 'DATABASE_URL still contains a hosted setup placeholder.',
       action: 'Run npm run hosted:db:packet, then replace DATABASE_URL with the real hosted database URL before deploying clients.',
+    });
+  } else if (isHosted && databaseUrl.startsWith('file:') && singleUserFileDb) {
+    items.push({
+      key: 'database',
+      label: 'Persistent database',
+      status: 'warn',
+      detail: 'Single-user website test mode is using file storage that can reset on redeploys or runtime restarts.',
+      action: 'Move to hosted libSQL/Turso before customer launch or anything that must persist reliably.',
     });
   } else if (isHosted && databaseUrl.startsWith('file:')) {
     items.push({

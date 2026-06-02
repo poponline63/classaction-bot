@@ -30,6 +30,7 @@ const report = evaluateHostedReadiness({
   workerRuntime: process.env.CLAIMBOT_WORKER_RUNTIME,
   workerRuntimeReceipt: process.env.CLAIMBOT_WORKER_RUNTIME_RECEIPT,
   paidBillingRequired: process.env.CLAIMBOT_BETA_NO_BILLING !== 'true',
+  singleUserFileDb: process.env.CLAIMBOT_SINGLE_USER_FILE_DB === 'true',
 });
 
 if (!report.ok) {
