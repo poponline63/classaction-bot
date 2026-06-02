@@ -66,6 +66,11 @@ async function executeIgnoringDuplicateColumn(sql: string) {
   }
 }
 
+function isUniqueConstraintError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return message.includes('unique constraint failed') || message.includes('sqlite_constraint_unique');
+}
+
 async function ensureRuntimeDatabaseReady() {
   if (runtimeReady) return runtimeReady;
   runtimeReady = (async () => {
@@ -115,12 +120,26 @@ export async function ensureUserForEmail(email: string, displayName = email): Pr
     cachedUserIdsByEmail.set(normalizedEmail, existing[0]!.id);
     return existing[0]!.id;
   }
-  const inserted = await db
-    .insert(schema.users)
-    .values({ email: normalizedEmail, displayName })
-    .returning();
-  cachedUserIdsByEmail.set(normalizedEmail, inserted[0]!.id);
-  return inserted[0]!.id;
+  try {
+    const inserted = await db
+      .insert(schema.users)
+      .values({ email: normalizedEmail, displayName })
+      .returning();
+    cachedUserIdsByEmail.set(normalizedEmail, inserted[0]!.id);
+    return inserted[0]!.id;
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error;
+    const raced = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, normalizedEmail))
+      .limit(1);
+    if (raced[0]) {
+      cachedUserIdsByEmail.set(normalizedEmail, raced[0].id);
+      return raced[0].id;
+    }
+    throw error;
+  }
 }
 
 export async function ensureUserForIdentity(
@@ -196,6 +215,24 @@ export async function ensureUserForIdentity(
       })
       .returning({ id: schema.users.id });
     return inserted[0]!.id;
+  }).catch(async (error) => {
+    if (!isUniqueConstraintError(error)) throw error;
+
+    const bySubject = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.externalSubject, externalSubject))
+      .limit(1);
+    if (bySubject[0]) return bySubject[0].id;
+
+    const byEmail = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, preferredEmail))
+      .limit(1);
+    if (byEmail[0]) return byEmail[0].id;
+
+    throw error;
   });
 
   cachedUserIdsByEmail.set(preferredEmail, userId);
