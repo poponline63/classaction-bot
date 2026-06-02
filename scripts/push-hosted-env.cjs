@@ -23,6 +23,7 @@ const pushKeys = [
   'CLAIMBOT_WORKER_RUNTIME_RECEIPT',
   'SCRAPER_USER_AGENT',
   'CLAIMBOT_SUPPORT_EMAIL',
+  'CLAIMBOT_SUPPORT_URL',
   'CLAIMBOT_DISABLE_AUTH',
   'CLAIMBOT_ENFORCE_CSP',
   'CLAIMBOT_SESSION_SECRET',
@@ -30,6 +31,7 @@ const pushKeys = [
   'CLAIMBOT_FEATURE_SETTLEMENT_SEARCH',
   'CLAIMBOT_FEATURE_BREACH_IMPORT',
   'CLAIMBOT_FEATURE_LIVE_FILING',
+  'CLAIMBOT_BETA_NO_BILLING',
   'CLAIMBOT_BILLING_PLUS_MONTHLY_URL',
   'CLAIMBOT_BILLING_PLUS_YEARLY_URL',
   'CLAIMBOT_BILLING_PRO_MONTHLY_URL',
@@ -52,7 +54,6 @@ const requiredKeys = [
   'CLAIM_FILER_MODE',
   'CLAIM_FILER_MAX_PER_DAY',
   'SCRAPER_USER_AGENT',
-  'CLAIMBOT_SUPPORT_EMAIL',
   'CLAIMBOT_DISABLE_AUTH',
   'CLAIMBOT_ENFORCE_CSP',
   'CLAIMBOT_SESSION_SECRET',
@@ -127,6 +128,9 @@ function assertReady(env) {
 
   for (const key of activeRequiredKeys) {
     if (!hasValue(env, key)) failures.push(`${key} is missing or still a placeholder.`);
+  }
+  if (!hasValue(env, 'CLAIMBOT_SUPPORT_EMAIL') && !hasValue(env, 'CLAIMBOT_SUPPORT_URL')) {
+    failures.push('CLAIMBOT_SUPPORT_EMAIL or CLAIMBOT_SUPPORT_URL is required for hosted client support.');
   }
 
   if (bootstrapMode) {

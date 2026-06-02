@@ -15,6 +15,7 @@ const report = evaluateHostedReadiness({
   claimFilerMaxPerDay: process.env.CLAIM_FILER_MAX_PER_DAY,
   scraperUserAgent: process.env.SCRAPER_USER_AGENT,
   supportEmail: process.env.CLAIMBOT_SUPPORT_EMAIL,
+  supportUrl: process.env.CLAIMBOT_SUPPORT_URL,
   isHosted,
   authDisabled: process.env.CLAIMBOT_DISABLE_AUTH === 'true',
   sessionSecret: process.env.CLAIMBOT_SESSION_SECRET,
@@ -28,6 +29,7 @@ const report = evaluateHostedReadiness({
   legalReviewAck: process.env.CLAIMBOT_LEGAL_REVIEW_ACK,
   workerRuntime: process.env.CLAIMBOT_WORKER_RUNTIME,
   workerRuntimeReceipt: process.env.CLAIMBOT_WORKER_RUNTIME_RECEIPT,
+  paidBillingRequired: process.env.CLAIMBOT_BETA_NO_BILLING !== 'true',
 });
 
 if (!report.ok) {

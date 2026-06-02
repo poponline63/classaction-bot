@@ -254,7 +254,7 @@ export function evaluateHostedReadiness(input: HostedReadinessInput): HostedRead
     });
   }
 
-  if (isHosted && (!workerRuntimeConfigured || !workerRuntimeVerified)) {
+  if (isHosted && paidBillingRequired && (!workerRuntimeConfigured || !workerRuntimeVerified)) {
     items.push({
       key: 'automation-worker-runtime',
       label: 'Automation worker runtime',
@@ -269,8 +269,12 @@ export function evaluateHostedReadiness(input: HostedReadinessInput): HostedRead
       key: 'automation-worker-runtime',
       label: 'Automation worker runtime',
       status: 'warn',
-      detail: 'Local development can create file_claim jobs, but paid full automation is not proved until a worker runtime processes them.',
-      action: 'Run npm run worker locally for development, and prove a persistent worker before hosted client launch.',
+      detail: isHosted
+        ? 'Beta no-billing launch can run without paid automation proof, but full automation is not proved until a worker runtime processes file_claim jobs.'
+        : 'Local development can create file_claim jobs, but paid full automation is not proved until a worker runtime processes them.',
+      action: isHosted
+        ? 'Keep paid automation CTAs disabled in beta, then prove a persistent worker before enabling paid full automation.'
+        : 'Run npm run worker locally for development, and prove a persistent worker before hosted client launch.',
     });
   } else {
     items.push({

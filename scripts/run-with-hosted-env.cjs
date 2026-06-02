@@ -26,6 +26,20 @@ function loadEnvFile(file) {
   return parseEnv(fs.readFileSync(file, 'utf8'));
 }
 
+function hasTemplatePlaceholder(value) {
+  const normalized = value?.trim().replace(/^["']|["']$/g, '').toLowerCase() || '';
+  return (
+    !normalized
+    || normalized.includes('your_')
+    || normalized.includes('your-')
+    || normalized.includes('paste_')
+    || normalized.includes('paste-')
+    || normalized.includes('yourdomain.com')
+    || normalized === 'example'
+    || normalized === 'placeholder'
+  );
+}
+
 function expandPowerShellEnvRefs(value, env) {
   return value.replace(/\$env:([A-Za-z_][A-Za-z0-9_]*)/g, (_match, key) => env[key] || '');
 }
@@ -45,8 +59,10 @@ if (!fs.existsSync(hostedEnvPath)) {
 const env = {
   ...process.env,
   ...loadEnvFile(launchEnvPath),
-  ...loadEnvFile(hostedEnvPath),
 };
+for (const [key, value] of Object.entries(loadEnvFile(hostedEnvPath))) {
+  if (!hasTemplatePlaceholder(value)) env[key] = value;
+}
 const [command, ...rawCommandArgs] = args;
 const commandArgs = rawCommandArgs.map((arg) => expandPowerShellEnvRefs(arg, env));
 
