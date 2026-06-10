@@ -73,12 +73,12 @@ function validateManifest() {
     fail('manifest.theme_color must be a 6-digit hex color.');
   }
 
-  if (manifest.background_color !== '#0f1117') {
-    fail('manifest.background_color must match the Kimi dark app background (#0f1117).');
+  if (manifest.background_color !== '#f5f5f7') {
+    fail('manifest.background_color must match the light app background (#f5f5f7).');
   }
 
-  if (manifest.theme_color !== '#141621') {
-    fail('manifest.theme_color must match the Kimi hosted app chrome (#141621).');
+  if (manifest.theme_color !== '#ffffff') {
+    fail('manifest.theme_color must match the Kimi hosted app chrome (#ffffff).');
   }
 
   if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) {

@@ -8,8 +8,8 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#0f1117",
-  "theme_color": "#141621",
+  "background_color": "#f5f5f7",
+  "theme_color": "#ffffff",
   "categories": ["productivity", "finance", "utilities"],
   "shortcuts": [
     {
