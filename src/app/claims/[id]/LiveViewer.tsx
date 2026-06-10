@@ -206,7 +206,7 @@ export default function LiveViewer({
             <h4>Paid automation plan required</h4>
             <p>
               {subscriptionPlanLabel} access can inspect this claim packet, but single-claim fully automated guarded filing
-              stays locked until Pro or Founding access is active.
+              pauses when the monthly filing allowance is used; paid plans remove the cap.
             </p>
             <div className="page-actions compact">
               <a className="btn sm" href="/pricing">Review automation plans</a>

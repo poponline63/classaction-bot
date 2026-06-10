@@ -446,7 +446,7 @@ export function buildLaunchEvidence(input: LaunchEvidenceInput = {}) {
         activeStatusRequired: true,
         unlocksAutomation: hasAutomationEntitlement(plan, 'active'),
       })),
-      freeAndPlusBoundary: 'Free and Plus can review matches and manage evidence; full guarded automation requires active Pro or Founding access.',
+      freeAndPlusBoundary: 'Free accounts include 5 guarded filings per month; active paid plans remove the monthly cap.',
       paymentProcessorReady: billing.ready,
       paidCheckoutReady: requiredPaidCheckoutReady,
       paidCheckoutBlockReasons: requiredPaidCheckoutBlockReasons,

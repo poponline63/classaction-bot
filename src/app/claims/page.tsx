@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { currentUserId } from '@lib/auth/current-user';
 import { isClientFeatureEnabled } from '@lib/features';
 import { currentMode } from '@lib/claim-filer/submit';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 import { buildClientPreviewChecklist } from '@lib/client-preview-checklist';
 import { clientSafeGateLabel, clientSafeOwnerLabel, stripOperatorRunbookText } from '@lib/client-safe-launch-copy';
 import { AlertTriangle, CheckCircle2, ShieldCheck } from 'lucide-react';
@@ -89,7 +89,8 @@ export default async function ClaimsPage() {
   const paidAutomationBlockers = clientPreviewChecklist.fullAutomationLaunchBlockers.rows;
   const paidAutomationBlockerSummary = clientPreviewChecklist.fullAutomationLaunchBlockers.summary;
   const subscriptionPlanLabel = subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1);
-  const automationEntitlementReady = subscription.automationEnabled;
+  const claimAllowance = await getMonthlyClaimAllowance(userId, { subscription });
+  const automationEntitlementReady = subscription.automationEnabled || claimAllowance.allowed;
   const rows = await db
     .select({ claim: schema.claims, settlement: schema.settlements, match: schema.matches })
     .from(schema.claims)
@@ -130,8 +131,8 @@ export default async function ClaimsPage() {
   const dailyThrottleLabel = Number.isFinite(dailyThrottle) && dailyThrottle > 0 ? dailyThrottle : 20;
   const dispatchBoundary = !automationEntitlementReady
     ? {
-        status: 'Blocked: Pro full automation required',
-        detail: `${subscriptionPlanLabel} access can review matches, but hands-off claim filing requires active Pro or Founding access.`,
+        status: 'Paused: monthly filing limit reached',
+        detail: `${subscriptionPlanLabel} access includes ${claimAllowance.limit ?? 5} guarded filings per month and all are used. Paid plans remove the cap.`,
         href: '/pricing',
         action: 'Review automation plans',
         tone: 'warn',
@@ -177,8 +178,8 @@ export default async function ClaimsPage() {
       title: 'Paid plan check',
       body: automationEntitlementReady
         ? `${subscriptionPlanLabel} access is active for fully automated guarded filing; proof, permission, form, account access, and account-history checks still apply.`
-        : `${subscriptionPlanLabel} access can review matches, but hands-off automation stays locked until Pro or Founding access is active.`,
-      state: automationEntitlementReady ? 'Unlocked' : 'Plan needed',
+        : `${subscriptionPlanLabel} access includes ${claimAllowance.limit ?? 5} guarded filings per month; the cap is used for this month. Paid plans remove it.`,
+      state: automationEntitlementReady ? 'Unlocked' : 'Limit reached',
       tone: automationEntitlementReady ? 'pass' : 'warn',
     },
     {
@@ -300,8 +301,8 @@ export default async function ClaimsPage() {
   ];
   const queueCommand = !automationEntitlementReady
     ? {
-        label: 'Hold - full automation plan needed',
-        detail: `${subscriptionPlanLabel} access can review matches and official links, but hands-off claim filing requires active Pro or Founding access.`,
+        label: 'Hold - monthly filing limit reached',
+        detail: `${subscriptionPlanLabel} access includes ${claimAllowance.limit ?? 5} guarded filings per month and all are used. Paid plans remove the cap.`,
         tone: 'warn',
         icon: AlertTriangle,
         href: '/pricing',

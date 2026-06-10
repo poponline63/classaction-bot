@@ -81,8 +81,8 @@ function reviewState(input: {
   }
   if (!input.automationEntitlementActive) {
     return {
-      label: 'Automation plan needed',
-      detail: 'Human review can continue, but full guarded automation requires active Pro or Founding access.',
+      label: 'Monthly limit reached',
+      detail: 'Human review can continue. Free accounts include 5 guarded filings per month; paid plans remove the cap.',
       tone: 'warn' as const,
     };
   }
@@ -200,7 +200,7 @@ export default async function EligibilityPage() {
       label: 'Paid automation',
       detail: subscription.automationEnabled
         ? `${subscriptionPlanLabel} access can run guarded automation after review checks pass.`
-        : `${subscriptionPlanLabel} access can review matches. Full automation needs Pro or Founding.`,
+        : `${subscriptionPlanLabel} access includes 5 guarded filings per month. Paid plans remove the cap.`,
       ok: subscription.automationEnabled,
       icon: Lock,
     },
@@ -367,7 +367,7 @@ export default async function EligibilityPage() {
           </div>
           <div className="trust-item">
             <strong>Plan check before claim tracking</strong>
-            <span>Free and Plus can review. Full guarded automation requires Pro or Founding.</span>
+            <span>Free accounts include 5 guarded filings per month. Paid plans remove the cap.</span>
           </div>
           <div className="trust-item">
             <strong>Source rules apply</strong>

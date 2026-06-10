@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         plan: subscription.plan,
         status: subscription.status,
         automationEnabled: subscription.automationEnabled,
-        boundary: 'Free and Plus can review matches; full guarded automation requires active Pro or Founding access.',
+        boundary: 'Free accounts include up to 5 guarded filings per month; active paid plans remove the monthly cap.',
       },
       boundary: 'Setup completion starts shadow-mode review only; proof-required claims stay manual and plan, queue, and file gates remain enforced.',
     },

@@ -141,16 +141,61 @@ afterAll(() => {
 });
 
 describe('queueClaim paid automation entitlement', () => {
-  it('blocks eligible authorized claims for free users before creating a claim row', async () => {
+  it('queues eligible authorized claims for free users within the monthly allowance', async () => {
     const { matchId } = await seedQueueableMatch();
 
     const result = await queueClaim(matchId);
 
+    expect(result).toMatchObject({ jobReused: false });
+    expect(result).toHaveProperty('claimId');
+    expect(await db.select().from(schema.claims)).toHaveLength(1);
+    expect(await db.select().from(schema.jobs)).toHaveLength(1);
+  });
+
+  it('blocks free users once the monthly claim allowance is used up', async () => {
+    const { userId, matchId } = await seedQueueableMatch();
+    const { FREE_MONTHLY_CLAIM_LIMIT } = await import('../../src/lib/billing/entitlements');
+
+    // Burn the entire monthly allowance with already-queued claims.
+    for (let i = 0; i < FREE_MONTHLY_CLAIM_LIMIT; i++) {
+      const settlements = await db
+        .insert(schema.settlements)
+        .values({
+          canonicalKey: `queue-limit-${i}-${Date.now()}-${Math.random()}`,
+          source: 'manual',
+          sourceUrl: 'https://example.com/source',
+          caseName: `Queue Limit Settlement ${i}`,
+          defendant: 'Acme',
+          defendantAliases: [],
+          category: 'CONSUMER_PRODUCT_PURCHASE',
+          classDefinition: 'All eligible Acme customers.',
+          proofRequired: false,
+          claimFormUrl: 'https://example.com/claim',
+          administrator: 'unknown',
+        })
+        .returning();
+      const matches = await db
+        .insert(schema.matches)
+        .values({
+          userId,
+          settlementId: settlements[0].id,
+          verdict: 'ELIGIBLE',
+          confidence: 0.92,
+          reasoningJson: {},
+          requiredCategory: 'CONSUMER_PRODUCT_PURCHASE',
+        })
+        .returning();
+      const queued = await queueClaim(matches[0].id);
+      expect(queued).toHaveProperty('claimId');
+    }
+    await db.delete(schema.auditLog);
+
+    const result = await queueClaim(matchId);
+
     expect(result).toEqual({
-      error: 'automation plan required - upgrade to Pro or Founding to use the authorized filing path',
+      error: `free monthly claim limit reached (${FREE_MONTHLY_CLAIM_LIMIT}/${FREE_MONTHLY_CLAIM_LIMIT} this month) - paid plans remove the cap`,
     });
-    expect(await db.select().from(schema.claims)).toHaveLength(0);
-    expect(await db.select().from(schema.jobs)).toHaveLength(0);
+    expect(await db.select().from(schema.claims)).toHaveLength(FREE_MONTHLY_CLAIM_LIMIT);
     const auditRows = await db.select().from(schema.auditLog);
     expect(auditRows).toHaveLength(1);
     expect(auditRows[0]).toMatchObject({
@@ -160,8 +205,7 @@ describe('queueClaim paid automation entitlement', () => {
       actor: 'user',
     });
     expect(auditRows[0].payloadJson).toMatchObject({
-      gate: 'paid-automation-entitlement',
-      reason: 'automation plan required - upgrade to Pro or Founding to use the authorized filing path',
+      gate: 'free-monthly-claim-limit',
     });
   });
 

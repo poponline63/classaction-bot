@@ -142,7 +142,7 @@ describe('POST /api/setup/complete', () => {
       },
     });
     expect(setupAudit.payloadJson.boundary).toContain('shadow-mode review only');
-    expect(setupAudit.payloadJson.planGate.boundary).toContain('full guarded automation requires active Pro or Founding');
+    expect(setupAudit.payloadJson.planGate.boundary).toContain('5 guarded filings per month');
     await expect(hasUserStartedSetupShadowReview(setupAudit.userId)).resolves.toBe(true);
     await expect(hasUserStartedSetupShadowReview(setupAudit.userId + 1)).resolves.toBe(false);
   });

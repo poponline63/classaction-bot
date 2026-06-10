@@ -33,7 +33,7 @@ import type {
 import type { MatcherContext } from '@lib/matcher/types';
 import { runRules } from '@lib/matcher/verdict';
 import { writeAudit } from '@lib/audit';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 
 export type PreflightOk = { ok: true; ctx: PreflightContext };
 export type PreflightAbort = {
@@ -113,10 +113,18 @@ export async function preflight(claimId: number): Promise<PreflightResult> {
 
   const subscription = await getUserSubscription(claim.userId);
   if (!subscription.automationEnabled) {
-    return abort(
-      'AUTOMATION_PLAN_REQUIRED',
-      `user ${claim.userId} is on ${subscription.plan}/${subscription.status}; active Pro or Founding access is required for filing preflight`,
-    );
+    // Free accounts may file within the monthly allowance. The claim being
+    // preflighted is excluded from the count so it does not block itself.
+    const allowance = await getMonthlyClaimAllowance(claim.userId, {
+      subscription,
+      excludeClaimId: claimId,
+    });
+    if (!allowance.allowed) {
+      return abort(
+        'AUTOMATION_PLAN_REQUIRED',
+        `user ${claim.userId} is on ${subscription.plan}/${subscription.status} and has used ${allowance.used}/${allowance.limit} free filings this month; paid plans remove the cap`,
+      );
+    }
   }
 
   // ---------- 2. Load related rows ----------

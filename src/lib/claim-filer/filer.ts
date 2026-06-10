@@ -21,7 +21,7 @@
 import { db, schema } from '@db/client';
 import { and, eq } from 'drizzle-orm';
 import { writeAudit } from '@lib/audit';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 import { isSettlementCategoryEnabled } from '@lib/features';
 import { getClientPreviewAutomationLock } from './client-preview-lock';
 import {
@@ -584,16 +584,20 @@ export async function queueClaim(
 
   const subscription = await getUserSubscription(joined.m.userId);
   if (!subscription.automationEnabled) {
-    const error = 'automation plan required - upgrade to Pro or Founding to use the authorized filing path';
-    await writeQueueBlockedAudit({
-      userId: joined.m.userId,
-      matchId,
-      settlementId: joined.s.id,
-      category: joined.s.category,
-      gate: 'paid-automation-entitlement',
-      reason: error,
-    });
-    return { error };
+    // Free accounts can still file, but only within the monthly allowance.
+    const allowance = await getMonthlyClaimAllowance(joined.m.userId, { subscription });
+    if (!allowance.allowed) {
+      const error = `free monthly claim limit reached (${allowance.used}/${allowance.limit} this month) - paid plans remove the cap`;
+      await writeQueueBlockedAudit({
+        userId: joined.m.userId,
+        matchId,
+        settlementId: joined.s.id,
+        category: joined.s.category,
+        gate: 'free-monthly-claim-limit',
+        reason: error,
+      });
+      return { error };
+    }
   }
 
   const clientPreviewLock = await getClientPreviewAutomationLock(joined.m.userId);

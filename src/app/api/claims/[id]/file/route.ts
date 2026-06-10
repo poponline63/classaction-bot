@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '@db/client';
 import { currentUserId } from '@lib/auth/current-user';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 import { ensureFileClaimJobForClaim } from '@lib/claim-filer/filer';
 import { getClientPreviewAutomationLock } from '@lib/claim-filer/client-preview-lock';
 import {
@@ -73,13 +73,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const subscription = await getUserSubscription(userId);
   if (!subscription.automationEnabled) {
-    return NextResponse.json(
-      {
-        error: 'automation plan required',
-        detail: `${subscription.plan}/${subscription.status} can inspect this claim, but active Pro or Founding access is required before paid full automation can arm a worker job.`,
-      },
-      { status: 402 },
-    );
+    // Free accounts may arm filings within the monthly allowance; the claim
+    // being armed is excluded from its own count.
+    const allowance = await getMonthlyClaimAllowance(userId, {
+      subscription,
+      excludeClaimId: id,
+    });
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        {
+          error: 'free monthly claim limit reached',
+          detail: `This account used ${allowance.used} of ${allowance.limit} included filings this month. Paid plans remove the monthly cap.`,
+        },
+        { status: 402 },
+      );
+    }
   }
 
   const result = await ensureFileClaimJobForClaim({

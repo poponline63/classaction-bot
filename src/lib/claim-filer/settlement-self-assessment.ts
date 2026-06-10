@@ -77,11 +77,11 @@ export function buildSettlementSelfAssessment(input: SettlementSelfAssessmentInp
     {
       key: 'automation-plan',
       title: 'Confirm paid automation access',
-      prompt: 'Does the user have active Pro or Founding access before this enters full guarded automation?',
+      prompt: 'Does this account have filing allowance left (paid plan or free monthly filings) before this enters full guarded automation?',
       status: input.automationEntitlementActive ? 'pass' : 'warn',
       detail: input.automationEntitlementActive
-        ? 'Active Pro or Founding access is present; proof, authorization, form, launch, and preflight gates still apply.'
-        : 'Free and Plus can review settlement context, but full guarded automation requires active Pro or Founding access.',
+        ? 'Filing allowance is available; proof, authorization, form, launch, and preflight gates still apply.'
+        : 'The monthly filing allowance is used for this account; paid plans remove the cap.',
     },
     {
       key: 'authorization',

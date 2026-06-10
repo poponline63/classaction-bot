@@ -3,7 +3,7 @@ import type { ReasoningTrace } from '@lib/matcher/types';
 import { and, count, desc, eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { currentUserId } from '@lib/auth/current-user';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 import { buildAuthorizationPreview } from '@lib/claim-filer/authorization-preview';
 import { evaluateQueueReadiness } from '@lib/claim-filer/queue-readiness';
 import { QUEUE_BOUNDARY_ACK, QUEUE_TRUST_LOCK_ACK } from '@lib/claim-filer/request-boundary';
@@ -63,6 +63,7 @@ export default async function ReviewPage({
   const breachImportEnabled = isClientFeatureEnabled('CLAIMBOT_FEATURE_BREACH_IMPORT');
   const settlementSearchEnabled = isClientFeatureEnabled('CLAIMBOT_FEATURE_SETTLEMENT_SEARCH');
   const subscription = await getUserSubscription(userId);
+  const claimAllowance = await getMonthlyClaimAllowance(userId, { subscription });
   const filingMode = await currentMode();
 
   const verdictFilter = searchParams.verdict ?? 'ELIGIBLE';
@@ -147,7 +148,7 @@ export default async function ReviewPage({
         proofRequired: settlement.proofRequired,
         claimFormUrl: settlement.claimFormUrl,
         hasActiveAuthorization: activeAuthCategories.has(settlement.category),
-        hasAutomationEntitlement: subscription.automationEnabled,
+        hasAutomationEntitlement: subscription.automationEnabled || claimAllowance.allowed,
         existingClaimId: existingClaim?.id,
       })] as const;
     }),
@@ -265,7 +266,7 @@ export default async function ReviewPage({
     {
       label: 'Tracking safety check',
       value: queueReadyCount > 0 ? `${queueReadyCount} can track` : 'No tracking release',
-      detail: 'ClaimBot rechecks verdict, proof, form availability, category permission, and Pro or Founding access before tracking starts.',
+      detail: 'ClaimBot rechecks verdict, proof, form availability, category permission, and the plan filing allowance before tracking starts.',
       tone: queueReadyCount > 0 ? 'pass' : 'warn',
     },
     {
@@ -551,7 +552,7 @@ export default async function ReviewPage({
           </div>
           <div className="trust-item">
             <strong>{subscription.automationEnabled ? 'Paid automation enabled' : `${automationPlanNeededCount} need paid automation`}</strong>
-            <span>The authorized filing path is reserved for active Pro or Founding plans.</span>
+            <span>Free accounts include 5 guarded filings per month; paid plans remove the cap.</span>
           </div>
           <div className="trust-item">
             <strong>Evidence first</strong>

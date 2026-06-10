@@ -58,7 +58,7 @@ export function buildClaimSafetyConsole(input: ClaimSafetyConsoleInput): ClaimSa
       tone: input.automationEntitlementActive ? 'pass' : 'warn',
       detail: input.automationEntitlementActive
         ? `${planLabel}/${statusLabel} can run full guarded automation after all claim checks pass.`
-        : `${planLabel}/${statusLabel} can review claim context, but final checks require active Pro or Founding access.`,
+        : `${planLabel}/${statusLabel} includes 5 guarded filings per month; final checks pause when the allowance is used.`,
     },
     {
       key: 'operator-lock',

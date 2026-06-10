@@ -4,7 +4,7 @@ import { and, desc, eq, gte, ne, type SQL } from 'drizzle-orm';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { currentUserId } from '@lib/auth/current-user';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 import { evaluateQueueReadiness } from '@lib/claim-filer/queue-readiness';
 import { QUEUE_BOUNDARY_ACK, QUEUE_TRUST_LOCK_ACK } from '@lib/claim-filer/request-boundary';
 import { currentMode } from '@lib/claim-filer/submit';
@@ -114,6 +114,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
 
   const userId = await currentUserId();
   const subscription = await getUserSubscription(userId);
+  const claimAllowance = await getMonthlyClaimAllowance(userId, { subscription });
   const filingMode = await currentMode();
   const showFilter = searchParams.show ?? 'eligible';
 
@@ -167,7 +168,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
         proofRequired: settlement.proofRequired,
         claimFormUrl: settlement.claimFormUrl,
         hasActiveAuthorization: activeAuthCategories.has(settlement.category),
-        hasAutomationEntitlement: subscription.automationEnabled,
+        hasAutomationEntitlement: subscription.automationEnabled || claimAllowance.allowed,
         existingClaimId: claim?.id,
       })] as const;
     }),
@@ -482,7 +483,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
                   <p className="stat-note">
                     {subscription.automationEnabled
                       ? 'Permissioned filing access is available after proof and authority checks pass.'
-                      : 'Permissioned filing lane requires Pro or Founding access.'}
+                      : 'Free accounts include 5 permissioned filings per month.'}
                   </p>
                 </div>
                 <div className="stat-card">
@@ -507,7 +508,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
             </div>
             <div className="trust-item">
               <strong>{subscription.automationEnabled ? 'Paid automation enabled' : `${automationPlanNeededCount} plan check${automationPlanNeededCount === 1 ? '' : 's'} needed`}</strong>
-              <span>Pro or Founding access is required before the permissioned filing path.</span>
+              <span>Free accounts include 5 permissioned filings per month; paid plans remove the cap.</span>
             </div>
             <div className="trust-item">
               <strong>Shadow default</strong>

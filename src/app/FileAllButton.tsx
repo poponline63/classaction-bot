@@ -262,8 +262,8 @@ export default function FileAllButton({ eligible }: { eligible: number }) {
         tone: 'warn',
       },
       {
-        label: 'Automation plan needed',
-        detail: 'Fully automated guarded filing requires active Pro or Founding access.',
+        label: 'Monthly filing limit reached',
+        detail: 'Free accounts include 5 guarded filings per month; paid plans remove the cap.',
         count: result.skippedNoPlan ?? 0,
         tone: 'warn',
       },

@@ -234,7 +234,7 @@ describe('preflight — abort scenarios', () => {
     if (!r.ok) expect(r.reason).toBe('AUTHORIZATION_DISABLED');
   });
 
-  it('4b. AUTOMATION_PLAN_REQUIRED when a queued claim user no longer has paid automation access', async () => {
+  it('4b. passes for paid plus users now that every active paid plan is uncapped', async () => {
     const { claimId } = await seedWorld({
       user: {
         subscriptionPlan: 'plus',
@@ -242,10 +242,62 @@ describe('preflight — abort scenarios', () => {
       },
     });
     const r = await preflight(claimId);
+    expect(r.ok).toBe(true);
+  });
+
+  it('4c. AUTOMATION_PLAN_REQUIRED when a free user has used the monthly allowance', async () => {
+    const { FREE_MONTHLY_CLAIM_LIMIT } = await import('../../src/lib/billing/entitlements');
+    const { userId, settlementId, matchId, authorizationId, claimId } = await seedWorld({
+      user: {
+        subscriptionPlan: 'free',
+        subscriptionStatus: 'inactive',
+      },
+    });
+    // Other claims queued this month exhaust the free allowance.
+    for (let i = 0; i < FREE_MONTHLY_CLAIM_LIMIT; i++) {
+      const extraSettlement = await db
+        .insert(schema.settlements)
+        .values({
+          canonicalKey: `preflight-limit-${i}-${Date.now()}-${Math.random()}`,
+          source: 'manual',
+          sourceUrl: 'https://example.com/source',
+          caseName: `Preflight Limit Settlement ${i}`,
+          defendant: 'Acme',
+          defendantAliases: [],
+          category: 'CONSUMER_PRODUCT_PURCHASE',
+          classDefinition: 'All eligible Acme customers.',
+          proofRequired: false,
+          claimFormUrl: 'https://example.com/claim',
+          administrator: 'unknown',
+        })
+        .returning();
+      const extraMatch = await db
+        .insert(schema.matches)
+        .values({
+          userId,
+          settlementId: extraSettlement[0].id,
+          verdict: 'ELIGIBLE',
+          confidence: 0.95,
+          reasoningJson: {},
+          requiredCategory: 'CONSUMER_PRODUCT_PURCHASE',
+        })
+        .returning();
+      await db.insert(schema.claims).values({
+        userId,
+        settlementId: extraSettlement[0].id,
+        matchId: extraMatch[0].id,
+        classAuthorizationId: authorizationId,
+        status: 'FILED',
+        queuedAt: new Date(),
+      });
+    }
+    void settlementId;
+    void matchId;
+    const r = await preflight(claimId);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.reason).toBe('AUTOMATION_PLAN_REQUIRED');
-      expect(r.detail).toContain('active Pro or Founding access');
+      expect(r.detail).toContain('free filings this month');
     }
   });
 

@@ -147,7 +147,7 @@ export default async function SettlementDetailPage({
       title: subscription.automationEnabled ? 'Paid automation enabled' : 'Automation plan needed',
       detail: subscription.automationEnabled
         ? `${subscription.plan} access is active; proof, permission, form, and final checks still apply.`
-        : 'Free users can review settlement context, but the permissioned filing path requires Pro or Founding access.',
+        : 'Free users get 5 permissioned filings per month; paid plans remove the cap.',
       value: subscription.plan,
       tone: subscription.automationEnabled ? 'pass' : 'warn',
     },
@@ -324,7 +324,7 @@ export default async function SettlementDetailPage({
                 <p>
                   {subscription.automationEnabled
                     ? `${subscription.plan} access can track review-ready no-proof claims for the permissioned filing path.`
-                    : 'Free users can review matches, but the permissioned filing path requires Pro or Founding access.'}
+                    : 'Free users get 5 permissioned filings per month; paid plans remove the cap.'}
                 </p>
               </div>
             </div>
@@ -431,7 +431,7 @@ export default async function SettlementDetailPage({
           </div>
           <div className="trust-item">
             <strong>Paid automation check</strong>
-            <span>Free users keep matching and review; the permissioned filing path unlocks with Pro or Founding.</span>
+            <span>Free users keep matching, review, and 5 permissioned filings per month; paid plans remove the cap.</span>
           </div>
           <div className="trust-item">
             <strong>Source remains authority</strong>

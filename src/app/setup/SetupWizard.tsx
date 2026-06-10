@@ -932,7 +932,7 @@ function StepDone({
       label: subscription.automationEnabled ? 'Automation plan active' : 'Automation plan check',
       detail: subscription.automationEnabled
         ? `${planLabel} access can run eligible no-proof claims hands-off after proof, permission, form, account, and live-mode checks pass.`
-        : `${planLabel} access can start review and matching, but full automation remains locked until Pro or Founding is active.`,
+        : `${planLabel} access starts review and matching with 5 included filings per month; paid plans remove the cap.`,
       tone: subscription.automationEnabled ? 'pass' : 'warn',
     },
     {
@@ -993,7 +993,7 @@ function StepDone({
               <strong>I allow shadow-mode review.</strong>
               <small>
                 ClaimBot may run discovery or scoped review and prepare review context. The permitted
-                filing lane requires active Pro or Founding access, proof-required matches stay manual,
+                filing lane includes 5 free filings per month (uncapped on paid plans), proof-required matches stay manual,
                 and no claim is submitted automatically without explicit filing approval and live-mode checks.
               </small>
             </span>
@@ -1031,7 +1031,7 @@ function StepDone({
         </div>
         <div>
           <strong>Plan check</strong>
-          <span>{subscription.automationEnabled ? `${planLabel} full automation active` : `${planLabel} review only; Pro or Founding required for full automation.`}</span>
+          <span>{subscription.automationEnabled ? `${planLabel} full automation active` : `${planLabel} includes 5 guarded filings per month; paid plans remove the cap.`}</span>
         </div>
         <div>
           <strong>Terms boundary receipt</strong>

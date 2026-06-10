@@ -78,7 +78,10 @@ export async function queueEligibleClaims(userId: number): Promise<ClaimQueueRes
         }
       } else if (queueResult.error.includes('authorization')) {
         result.skippedNoAuth++;
-      } else if (queueResult.error.includes('automation plan')) {
+      } else if (
+        queueResult.error.includes('automation plan')
+        || queueResult.error.includes('monthly claim limit')
+      ) {
         result.skippedNoPlan++;
       } else {
         result.errors.push(`match #${match.id}: ${queueResult.error}`);

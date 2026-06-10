@@ -64,7 +64,7 @@ const ABORT_EXPLANATIONS: Record<string, string> = {
   MATCHER_VERDICT_NOT_ELIGIBLE: 'The matcher no longer marks this settlement as eligible for the current profile.',
   MATCHER_CONFIDENCE_TOO_LOW: 'The matcher confidence is too low. Add more profile, purchase, or breach detail before retrying.',
   RATE_LIMIT_EXCEEDED: 'The daily claim limit has been reached. Retry after the limit resets.',
-  AUTOMATION_PLAN_REQUIRED: 'The user no longer has an active Pro or Founding plan, so final checks stayed locked.',
+  AUTOMATION_PLAN_REQUIRED: 'The monthly filing allowance for this account is used up, so final checks stayed paused.',
   CLAIM_NOT_FOUND: 'Claim record not found.',
   CLAIM_NOT_QUEUED: 'This claim has already moved out of the tracked state.',
   SETTLEMENT_NOT_FOUND: 'Settlement record not found.',
@@ -216,7 +216,7 @@ export default async function ClaimDetailPage({
       title: 'Plan check',
       detail: subscription.automationEnabled
         ? `${subscriptionPlanLabel}/${subscription.status} access is active for full guarded automation; claim-specific checks still apply.`
-        : `${subscriptionPlanLabel}/${subscription.status} can review this claim record, but final checks require active Pro or Founding access.`,
+        : `${subscriptionPlanLabel}/${subscription.status} includes 5 guarded filings per month; final checks pause when the allowance is used.`,
       tone: subscription.automationEnabled ? 'pass' : 'warn',
     },
     {
@@ -424,7 +424,7 @@ export default async function ClaimDetailPage({
                 <p>
                   {subscription.automationEnabled
                     ? `${subscriptionPlanLabel} access is active; final checks still inspect claim-specific checks before form work.`
-                    : 'This claim record remains reviewable, but final checks require active Pro or Founding access.'}
+                    : 'This claim record remains reviewable; final checks pause when the monthly filing allowance is used.'}
                 </p>
               </div>
             </div>

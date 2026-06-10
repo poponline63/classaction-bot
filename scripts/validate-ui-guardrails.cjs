@@ -626,7 +626,7 @@ if (!auditPage.includes('paidAutomationBlockers') || !auditPage.includes('Paid f
 }
 
 const claimsPage = readIfExists('src/app/claims/page.tsx');
-if (!claimsPage.includes('getUserSubscription') || !claimsPage.includes('Paid plan check') || !claimsPage.includes('Pro or Founding access')) {
+if (!claimsPage.includes('getUserSubscription') || !claimsPage.includes('Paid plan check') || !claimsPage.includes('guarded filings per month')) {
   failures.push('src/app/claims/page.tsx must show the paid plan check before the authorized filing lane can be used.');
 }
 if (!claimsPage.includes('Full Automation Lane') || !claimsPage.includes('Paid commands run fully automated when checks pass') || !claimsPage.includes('Fully automated guarded filing') || !claimsPage.includes('Hard blockers only') || !claimsPage.includes('without the user clicking each step')) {
@@ -659,7 +659,7 @@ const claimSafetyConsole = readIfExists('src/lib/claim-filer/claim-safety-consol
 if (!claimDetailNotFound.includes('Claim record not found') || !claimDetailNotFound.includes('No claim action started') || !claimDetailNotFound.includes('/claims') || !claimDetailNotFound.includes('/review') || !claimDetailNotFound.includes('/status')) {
   failures.push('src/app/claims/[id]/not-found.tsx must provide customer-safe claim-detail recovery actions without starting automation.');
 }
-if (!claimDetailPage.includes('getUserSubscription') || !claimDetailPage.includes('automationEntitlementActive: subscription.automationEnabled') || !claimSafetyConsole.includes("key: 'plan-gate'") || !claimSafetyConsole.includes('final checks require active Pro or Founding access')) {
+if (!claimDetailPage.includes('getUserSubscription') || !claimDetailPage.includes('automationEntitlementActive: subscription.automationEnabled') || !claimSafetyConsole.includes("key: 'plan-gate'") || !claimSafetyConsole.includes('final checks pause when the allowance is used')) {
   failures.push('claim detail safety console must show current paid automation plan check before retrying final checks.');
 }
 if (!claimDetailPage.includes('<ClaimDetailPacketBrowser rows={claimPacketRows} claimId={claim.id} />') || !claimDetailPage.includes('claimPacketRows') || !claimDetailPacketBrowser.includes('Search claim packet evidence without starting final checks') || !claimDetailPacketBrowser.includes('All packet items') || !claimDetailPacketBrowser.includes('This browser is read-only') || !claimDetailPacketBrowser.includes('Browser filters never start final checks')) {
@@ -709,7 +709,7 @@ const goalPage = readIfExists('src/app/goal/page.tsx');
 if (!goalPage.includes('getUserSubscription') || !goalPage.includes('evaluateQueueReadiness') || !goalPage.includes('Paid Automation Receipt') || !goalPage.includes('Payment can unlock full guarded automation')) {
   failures.push('src/app/goal/page.tsx must show a paid automation readiness receipt backed by subscription and queue-readiness gates.');
 }
-if (!goalPage.includes('subscription.automationEnabled') || !goalPage.includes('View automation plans') || !goalPage.includes('Pro or Founding is required before full automation can run claims')) {
+if (!goalPage.includes('subscription.automationEnabled') || !goalPage.includes('View automation plans') || !goalPage.includes('paid plans remove the cap')) {
   failures.push('src/app/goal/page.tsx must keep unpaid users pointed to pricing and avoid implying automation is unlocked.');
 }
 if (!goalPage.includes('buildClientPreviewChecklist') || !goalPage.includes('Customer access') || !goalPage.includes('Customer access waits for readiness') || !goalPage.includes('Required inputs:') || !goalPage.includes('clientSafeRequiredInputSummary(nextExternalProof.requiredInputs') || !goalPage.includes('clientSafeLaunchLabel') || !goalPage.includes('clientSafeLaunchLabel(item)') || !goalPage.includes('/packets') || !goalPage.includes('Open readiness status') || goalPage.includes('Export checklist')) {
@@ -730,17 +730,17 @@ if (!settlementDetailPage.includes('<SettlementDetailBrowser rows={settlementDet
   failures.push('src/app/settlements/[id] must expose a real-data read-only Kimi-style source browser without changing tracking, proof, permission, or eligibility checks.');
 }
 const settlementSelfAssessment = readIfExists('src/lib/claim-filer/settlement-self-assessment.ts');
-if (!settlementDetailPage.includes('automationEntitlementActive: subscription.automationEnabled') || !settlementSelfAssessment.includes('automation-plan') || !settlementSelfAssessment.includes('full guarded automation requires active Pro or Founding')) {
+if (!settlementDetailPage.includes('automationEntitlementActive: subscription.automationEnabled') || !settlementSelfAssessment.includes('automation-plan') || !settlementSelfAssessment.includes('monthly filing allowance')) {
   failures.push('settlement detail self-assessment must include the paid automation plan check.');
 }
 
 const setupPagePlanGate = readIfExists('src/app/setup/page.tsx');
 const setupWizardPlanGate = readIfExists('src/app/setup/SetupWizard.tsx');
 const setupCompleteRoutePlanGate = readIfExists('src/app/api/setup/complete/route.ts');
-if (!setupPagePlanGate.includes('getUserSubscription') || !setupWizardPlanGate.includes('Automation plan check') || !setupWizardPlanGate.includes('Pro or Founding is active')) {
+if (!setupPagePlanGate.includes('getUserSubscription') || !setupWizardPlanGate.includes('Automation plan check') || !setupWizardPlanGate.includes('5 included filings per month')) {
   failures.push('src/app/setup must show the current plan check before setup completion implies authorized automation.');
 }
-if (!setupCompleteRoutePlanGate.includes('getUserSubscription') || !setupCompleteRoutePlanGate.includes('planGate') || !setupCompleteRoutePlanGate.includes('full guarded automation requires active Pro or Founding')) {
+if (!setupCompleteRoutePlanGate.includes('getUserSubscription') || !setupCompleteRoutePlanGate.includes('planGate') || !setupCompleteRoutePlanGate.includes('5 guarded filings per month')) {
   failures.push('src/app/api/setup/complete/route.ts must record setup shadow-review plan-gate evidence.');
 }
 if (!setupWizardPlanGate.includes('TERMS_BOUNDARY_ACK') || !setupWizardPlanGate.includes('I acknowledge the ClaimBot Terms boundary') || !setupCompleteRoutePlanGate.includes('USER_TERMS_ACKNOWLEDGED') || !setupCompleteRoutePlanGate.includes('terms boundary acknowledgement required')) {
@@ -1330,7 +1330,7 @@ if (!smokeHostedAuth.includes('localVerificationPacket') || !smokeHostedAuth.inc
 if (!smokeHostedAuth.includes('hasParsedLocalVerificationReceipt') || !smokeHostedAuth.includes('activationWorkbookLocalTooling?.localVerificationPacket') || !smokeHostedAuth.includes('clientPreviewLocalTooling?.localVerificationPacket') || !smokeHostedAuth.includes('launchHandoffLocalTooling?.localVerificationPacket')) {
   failures.push('scripts/smoke-hosted-auth.cjs must verify parsed local verification receipts across activation workbook, client preview checklist, and launch handoff exports.');
 }
-if (!supportPacket.includes('planGate') || !supportPacket.includes('full guarded automation requires active Pro or Founding')) {
+if (!supportPacket.includes('planGate') || !supportPacket.includes('5 guarded filings per month')) {
   failures.push('src/lib/audit/support-packet.ts must include paid plan-gate evidence in support exports.');
 }
 if (!supportPacket.includes('billing') || !supportPacket.includes('getBillingReadiness')) {
@@ -1445,7 +1445,7 @@ const pricingPlanCards = readIfExists('src/app/pricing/PricingPlanCards.tsx');
 const pricingFaqBrowser = readIfExists('src/app/pricing/PricingFaqBrowser.tsx');
 const contactPage = readIfExists('src/app/contact/page.tsx');
 const helpPage = readIfExists('src/app/help/page.tsx');
-if (!pricingPage.includes('getUserSubscription') || !pricingPage.includes('Current plan entitlement') || !pricingPage.includes('Automation entitlement is locked') || !pricingPage.includes('Database entitlement') || !pricingPage.includes('Pro or Founding required')) {
+if (!pricingPage.includes('getUserSubscription') || !pricingPage.includes('Current plan entitlement') || !pricingPage.includes('Automation entitlement is locked') || !pricingPage.includes('Database entitlement') || !pricingPage.includes('5 included filings per month')) {
   failures.push('src/app/pricing/page.tsx must render the current backend subscription entitlement state before implying paid automation is available.');
 }
 if (!pricingPage.includes('Free matching. Paid full automation.') || !pricingPage.includes('Full Automation Lane') || !pricingPage.includes('not semi-automated') || !pricingPage.includes('fully automated filing runs') || !pricingPage.includes('Fully automated guarded run') || !pricingPage.includes('Hands-off claim filing')) {

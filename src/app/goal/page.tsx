@@ -4,7 +4,7 @@ import { and, count, desc, eq } from 'drizzle-orm';
 import { isClientFeatureEnabled } from '@lib/features';
 import { currentMode } from '@lib/claim-filer/submit';
 import { currentUserId } from '@lib/auth/current-user';
-import { getUserSubscription } from '@lib/billing/entitlements';
+import { getMonthlyClaimAllowance, getUserSubscription } from '@lib/billing/entitlements';
 import { evaluateQueueReadiness } from '@lib/claim-filer/queue-readiness';
 import { buildClientPreviewChecklist } from '@lib/client-preview-checklist';
 import { buildLaunchActionPlan } from '@lib/launch-action-plan';
@@ -63,6 +63,7 @@ export default async function GoalPage() {
     getUserSubscription(userId),
     buildClientPreviewChecklist(userId),
   ]);
+  const claimAllowance = await getMonthlyClaimAllowance(userId, { subscription });
   const isLive = mode === 'live';
   const breachImportEnabled = isClientFeatureEnabled('CLAIMBOT_FEATURE_BREACH_IMPORT');
   const settlementSearchEnabled = isClientFeatureEnabled('CLAIMBOT_FEATURE_SETTLEMENT_SEARCH');
@@ -221,7 +222,7 @@ export default async function GoalPage() {
     proofRequired: settlement.proofRequired,
     claimFormUrl: settlement.claimFormUrl,
     hasActiveAuthorization: activeAuthorizationCategories.has(settlement.category),
-    hasAutomationEntitlement: subscription.automationEnabled,
+    hasAutomationEntitlement: subscription.automationEnabled || claimAllowance.allowed,
     existingClaimId: existingClaimMatchIds.has(match.id) ? match.id : null,
   }));
   const automationQueueReadyCount = queueReadinessRows.filter((row) => row.canQueue).length;
@@ -232,7 +233,7 @@ export default async function GoalPage() {
       title: 'Plan access',
       detail: subscription.automationEnabled
         ? `${titleCase(subscription.plan)} access can run eligible no-proof claims hands-off after review checks pass.`
-        : `${titleCase(subscription.plan)} access is review-only; Pro or Founding is required before full automation can run claims.`,
+        : `${titleCase(subscription.plan)} access includes 5 guarded filings per month; paid plans remove the cap.`,
       tone: subscription.automationEnabled ? 'pass' : 'warn',
     },
     {
@@ -695,7 +696,7 @@ export default async function GoalPage() {
         </div>
         <div className="goal-automation-receipt-footer">
           <span>{automationProofLockedCount} proof-required match{automationProofLockedCount === 1 ? '' : 'es'} stay manual.</span>
-          <span>{automationPlanLockedCount} match{automationPlanLockedCount === 1 ? '' : 'es'} wait on Pro or Founding automation.</span>
+          <span>{automationPlanLockedCount} match{automationPlanLockedCount === 1 ? '' : 'es'} wait on this month's filing allowance.</span>
           <Link className="btn ghost sm" href={subscription.automationEnabled ? '/review' : '/pricing'}>
             {subscription.automationEnabled ? 'Review claim checks' : 'View automation plans'}
           </Link>

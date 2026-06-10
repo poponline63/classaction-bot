@@ -101,6 +101,7 @@ describe('claim audit export digest helpers', () => {
         plan: 'pro',
         status: 'active',
         automationEnabled: true,
+        monthlyClaimLimit: null,
         source: 'database',
       },
       matcherRunReceipt: {
@@ -358,7 +359,7 @@ describe('claim audit export digest helpers', () => {
     expect(evidence.verificationCommands).toContain('npm run smoke:hosted:local');
     expect(evidence.planGate.currentPlan).toBe('pro');
     expect(evidence.planGate.automationEnabled).toBe(true);
-    expect(evidence.planGate.freeAndPlusBoundary).toContain('full guarded automation requires active Pro or Founding');
+    expect(evidence.planGate.freeAndPlusBoundary).toContain('5 guarded filings per month');
     expect(evidence.planGate.paymentProcessorReady).toBe(true);
     expect(evidence.planGate.paidCheckoutReady).toBe(true);
     expect(evidence.planGate.paidCheckoutBlockReasons).toEqual({

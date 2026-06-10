@@ -11,10 +11,10 @@ describe('billing entitlements', () => {
     expect(normalizeSubscriptionStatus('paused')).toBe('inactive');
   });
 
-  it('unlocks automation only for active paid automation plans', () => {
+  it('unlocks uncapped automation for every active paid plan', () => {
     expect(hasAutomationEntitlement('pro', 'active')).toBe(true);
     expect(hasAutomationEntitlement('founding', 'trialing')).toBe(true);
-    expect(hasAutomationEntitlement('plus', 'active')).toBe(false);
+    expect(hasAutomationEntitlement('plus', 'active')).toBe(true);
     expect(hasAutomationEntitlement('pro', 'past_due')).toBe(false);
     expect(hasAutomationEntitlement('free', 'active')).toBe(false);
   });

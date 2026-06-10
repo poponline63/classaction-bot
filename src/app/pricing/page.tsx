@@ -450,7 +450,7 @@ export default async function PricingPage() {
     : 'This receipt comes from the signed ClaimBot account state. Pricing copy never unlocks automation until the account subscription says the plan and status are active.';
   const automationEntitlementCopy = subscription.automationEnabled
     ? 'Fully automated guarded filing can run eligible no-proof claims after proof, permission, form, account access, and filing-mode checks pass.'
-    : 'This account can review matches, but hands-off claim automation requires active Pro or Founding access.';
+    : 'This account includes 5 guarded filings per month; paid plans remove the monthly cap.';
 
   function tierCheckoutState(planKey: BillingPlanKey | null) {
     if (!planKey) return null;
@@ -745,7 +745,7 @@ export default async function PricingPage() {
             },
             {
               label: 'Permissioned automation',
-              value: subscription.automationEnabled ? 'Unlocked by plan' : 'Pro or Founding required',
+              value: subscription.automationEnabled ? 'Unlocked by plan' : '5 included filings per month',
               detail: automationEntitlementCopy,
               tone: subscription.automationEnabled ? 'pass' : 'warn',
             },
@@ -775,7 +775,7 @@ export default async function PricingPage() {
             <h2>{billing.ready ? 'Paid checkout is available' : 'Paid checkout needs activation'}</h2>
             <p>
               Paid plan buttons use secure payment links. ClaimBot does not handle card data,
-              and automation still requires protected payment confirmation plus active Pro or Founding access.
+              and uncapped automation still requires protected payment confirmation on an active paid plan.
             </p>
           </div>
           <span className={`tag ${billing.ready ? 'good' : 'warn'}`}>

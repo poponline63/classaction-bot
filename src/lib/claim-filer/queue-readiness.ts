@@ -72,7 +72,7 @@ export function evaluateQueueReadiness(input: QueueReadinessInput): QueueReadine
       status: 'blocked',
       tone: 'yellow',
       label: 'Automation plan needed',
-      detail: 'Pro or Founding access is required before this match can enter full guarded automation.',
+      detail: 'The monthly filing allowance is used for this account; paid plans remove the cap.',
     };
   }
 
