@@ -111,9 +111,23 @@ export function clientPreviewLockPayload(clientPreviewChecklist: ClientPreviewCh
 
 export type ClientPreviewLockPayload = ReturnType<typeof clientPreviewLockPayload>;
 
+// The client-preview checklist is an operator launch-readiness gate (publish
+// the site, run site checks, refresh launch/local-verification receipts).
+// Those receipts live in git-ignored /data and cannot exist on the hosted
+// serverless runtime, so on a launched production the operator affirms
+// readiness explicitly with CLAIMBOT_AUTOMATION_READY=true. This only clears
+// the launch-readiness gate; every legal claim guardrail (matcher verdict,
+// category permission, proof requirement, claim form, plan allowance, daily
+// cap, and the file-time preflight that rechecks them) stays fully enforced.
+export function operatorAffirmedAutomationReady(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return env.CLAIMBOT_AUTOMATION_READY === 'true';
+}
+
 export async function getClientPreviewAutomationLock(userId: number) {
   const clientPreviewChecklist = await buildClientPreviewChecklist(userId);
-  if (clientPreviewChecklist.summary.clientPreviewReady) {
+  if (clientPreviewChecklist.summary.clientPreviewReady || operatorAffirmedAutomationReady()) {
     return {
       locked: false as const,
       clientPreviewChecklist,

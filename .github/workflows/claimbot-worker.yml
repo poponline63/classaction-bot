@@ -34,6 +34,7 @@ jobs:
       CLAIM_FILER_LIVE_ACK: ${{ vars.CLAIM_FILER_LIVE_ACK }}
       CLAIM_FILER_MAX_PER_DAY: ${{ vars.CLAIM_FILER_MAX_PER_DAY || '20' }}
       CLAIMBOT_FEATURE_LIVE_FILING: ${{ vars.CLAIMBOT_FEATURE_LIVE_FILING || 'false' }}
+      CLAIMBOT_AUTOMATION_READY: ${{ vars.CLAIMBOT_AUTOMATION_READY || 'false' }}
       CLAIMBOT_DISABLE_AUTH: "false"
       CLAIMBOT_WORKER_ONCE_LIMIT: ${{ github.event.inputs.limit || vars.CLAIMBOT_WORKER_ONCE_LIMIT || '3' }}
       CLAIMBOT_WORKER_SMOKE_RECEIPT_PATH: data/worker-smoke-receipt.json
