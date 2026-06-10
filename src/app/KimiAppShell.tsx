@@ -35,6 +35,7 @@ import { canUseNetlifyIdentity } from './identity-env';
 import MobileBottomNav from './MobileBottomNav';
 import PwaConnectionStatus from './PwaConnectionStatus';
 import AppFooter from './AppFooter';
+import CommandPalette from './CommandPalette';
 
 type FilingMode = 'shadow' | 'live';
 type IdentityUser = {
@@ -182,6 +183,7 @@ export default function KimiAppShell({
 
   return (
     <div className="kimi-shell">
+      <CommandPalette />
       {mobileOpen && (
         <button
           aria-label="Close navigation overlay"
@@ -286,6 +288,16 @@ export default function KimiAppShell({
             <div className="kimi-topbar-page-label">{activeLabel}</div>
           </div>
           <div className="kimi-topbar-actions">
+            <button
+              type="button"
+              className="kimi-search-trigger"
+              aria-label="Search pages and settlements (Ctrl+K)"
+              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+            >
+              <Search aria-hidden="true" size={15} />
+              <span>Search</span>
+              <kbd>Ctrl K</kbd>
+            </button>
             <div className={`kimi-shadow-pill ${filingMode === 'live' ? 'live' : 'shadow'}`}>
               <span aria-hidden="true" />
               {modeLabel}
