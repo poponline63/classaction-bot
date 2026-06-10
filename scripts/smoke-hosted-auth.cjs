@@ -1537,11 +1537,11 @@ async function main() {
   const status = response ? response.status() : 0;
   results.push({ path: '/', finalUrl, status, h1, errors });
 
-  if (!finalUrl.includes('/login') || !finalUrl.includes('next=%2F')) {
-    failures.push(`/: expected redirect to /login?next=%2F, got ${finalUrl}`);
+  if (!finalUrl.includes('/welcome')) {
+    failures.push(`/: expected anonymous redirect to /welcome, got ${finalUrl}`);
   }
-  if (h1 !== 'Sign in to ClaimBot') {
-    failures.push(`/: expected login h1, got "${h1}"`);
+  if (!h1.includes('class actions')) {
+    failures.push(`/: expected public homepage h1, got "${h1}"`);
   }
   for (const error of errors) failures.push(`/: ${error}`);
 
@@ -1564,11 +1564,11 @@ async function main() {
     status: fakeCookieResponse ? fakeCookieResponse.status() : 0,
     h1: fakeCookieH1,
   });
-  if (!fakeCookieFinalUrl.includes('/login') || !fakeCookieFinalUrl.includes('next=%2F')) {
-    failures.push(`/: fake nf_jwt cookie must still redirect to /login?next=%2F, got ${fakeCookieFinalUrl}`);
+  if (!fakeCookieFinalUrl.includes('/welcome')) {
+    failures.push(`/: fake nf_jwt cookie must still redirect to /welcome, got ${fakeCookieFinalUrl}`);
   }
-  if (fakeCookieH1 !== 'Sign in to ClaimBot') {
-    failures.push(`/: fake nf_jwt cookie expected login h1, got "${fakeCookieH1}"`);
+  if (!fakeCookieH1.includes('class actions')) {
+    failures.push(`/: fake nf_jwt cookie expected public homepage h1, got "${fakeCookieH1}"`);
   }
   await fakeCookiePage.close();
 

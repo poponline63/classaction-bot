@@ -26,6 +26,7 @@ const productionCsp = [
 
 const publicPathPrefixes = [
   '/_next/',
+  '/welcome',
   '/login',
   '/pricing',
   '/help',
@@ -107,6 +108,15 @@ export async function middleware(request: NextRequest) {
   if (isHostedAuthRequired() && !isPublicPath(request.nextUrl.pathname) && !(await hasAppSession(request))) {
     if (request.nextUrl.pathname.startsWith('/api/')) {
       return withSecurityHeaders(NextResponse.json({ error: 'authentication required' }, { status: 401 }), request.nextUrl.pathname);
+    }
+
+    // Anonymous visitors hitting the app root get the public homepage;
+    // deep links into the workspace still go to sign-in with a return path.
+    if (request.nextUrl.pathname === '/') {
+      const welcomeUrl = request.nextUrl.clone();
+      welcomeUrl.pathname = '/welcome';
+      welcomeUrl.search = '';
+      return withSecurityHeaders(NextResponse.redirect(welcomeUrl), request.nextUrl.pathname);
     }
 
     const loginUrl = request.nextUrl.clone();

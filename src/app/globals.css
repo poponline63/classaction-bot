@@ -18813,3 +18813,359 @@ summary:focus-visible {
     #ffffff;
   border: 1px solid rgba(94, 92, 230, 0.18);
 }
+
+/* =============================================================================
+   Public homepage (/welcome). Marketing surface; tokens only.
+   ========================================================================== */
+
+.container:has(.welcome-page) {
+  margin: 0;
+  max-width: none;
+  padding: 0;
+}
+
+.welcome-page {
+  background: var(--bg2);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.welcome-nav {
+  align-items: center;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.welcome-brand {
+  align-items: center;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 17px;
+  font-weight: 700;
+  gap: 8px;
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.welcome-brand svg { color: var(--accent); }
+
+.welcome-nav-links {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.welcome-nav-links a {
+  border-radius: 10px;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 550;
+  min-height: 44px;
+  padding: 0 14px;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.welcome-nav-links a:hover { background: var(--fill); color: var(--text); }
+
+.welcome-nav-links .welcome-nav-signin {
+  background: var(--fill);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.welcome-page main {
+  display: grid;
+  gap: 96px;
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 80px 24px 96px;
+}
+
+.welcome-hero {
+  align-items: center;
+  display: grid;
+  gap: 48px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+}
+
+.welcome-hero-copy h1 {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0 0 20px;
+}
+
+.welcome-hero-copy > p {
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1.55;
+  margin: 0 0 28px;
+  max-width: 34em;
+}
+
+.welcome-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.welcome-hero-footnote {
+  color: var(--muted);
+  display: block;
+  font-size: 13px;
+}
+
+.welcome-mock {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.welcome-mock-bar {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.welcome-mock-bar i {
+  background: var(--fill-strong);
+  border-radius: 999px;
+  display: block;
+  height: 10px;
+  width: 10px;
+}
+
+.welcome-mock-body { display: grid; gap: 10px; padding: 18px; }
+
+.welcome-mock-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.welcome-mock-row strong { font-size: 15px; }
+
+.welcome-mock-chip {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  text-transform: uppercase;
+}
+
+.welcome-mock-chip.good { background: var(--good-bg); color: var(--good); }
+
+.welcome-mock-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+}
+
+.welcome-mock-card span { font-size: 14px; font-weight: 600; }
+.welcome-mock-card em { color: var(--good); font-size: 12px; font-style: normal; }
+.welcome-mock-card.muted em { color: var(--warn); }
+
+.welcome-mock-cta {
+  background: var(--accent);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+  padding: 11px;
+  text-align: center;
+}
+
+.welcome-proof {
+  border-block: 1px solid var(--border);
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 32px 0;
+}
+
+.welcome-proof div { display: grid; gap: 6px; }
+
+.welcome-proof strong {
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.welcome-proof span {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+  max-width: 24em;
+}
+
+.welcome-section-head { display: grid; gap: 10px; margin-bottom: 32px; max-width: 640px; }
+.welcome-section-head h2 { font-size: 32px; font-weight: 700; line-height: 1.15; margin: 0; }
+.welcome-section-head p { color: var(--text-secondary); font-size: 16px; line-height: 1.55; margin: 0; }
+
+.welcome-steps-grid,
+.welcome-trust-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.welcome-step-card,
+.welcome-trust-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+  position: relative;
+}
+
+.welcome-step-card svg,
+.welcome-trust-card svg { color: var(--accent); }
+
+.welcome-step-card h3,
+.welcome-trust-card h3 { font-size: 17px; font-weight: 650; margin: 0; }
+
+.welcome-step-card p,
+.welcome-trust-card p { color: var(--text-secondary); font-size: 14px; line-height: 1.55; margin: 0; }
+
+.welcome-step-num {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  position: absolute;
+  right: 20px;
+  top: 18px;
+}
+
+.welcome-pricing-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 760px;
+}
+
+.welcome-price-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.welcome-price-card.featured { border-color: var(--accent-border); }
+
+.welcome-price-plan {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.welcome-price-card > strong { font-size: 34px; font-weight: 700; line-height: 1; }
+.welcome-price-card > strong small { color: var(--muted); font-size: 15px; font-weight: 550; }
+
+.welcome-price-card ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.welcome-price-card li {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.welcome-price-card li svg { color: var(--good); flex: 0 0 auto; }
+
+.welcome-final {
+  background: var(--text);
+  border-radius: 20px;
+  color: var(--bg2);
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.welcome-final h2 { color: #ffffff; font-size: 32px; font-weight: 700; margin: 0; }
+.welcome-final p { color: rgba(255, 255, 255, 0.72); font-size: 16px; margin: 0 0 8px; }
+
+.welcome-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 40px 24px 56px;
+}
+
+.welcome-footer p { font-size: 13px; line-height: 1.6; margin: 0; max-width: 70em; }
+
+.welcome-footer nav { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.welcome-footer nav a {
+  align-items: center;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 550;
+  min-height: 44px;
+  padding: 0 10px;
+  text-decoration: none;
+}
+
+.welcome-footer nav a:hover { background: var(--fill); color: var(--text); }
+
+.welcome-footer > span { font-size: 12px; }
+
+@media (max-width: 900px) {
+  .welcome-page main { gap: 64px; padding: 48px 20px 64px; }
+  .welcome-hero-copy h1 { font-size: 38px; }
+  .welcome-section-head h2, .welcome-final h2 { font-size: 26px; }
+  .welcome-hero { gap: 32px; grid-template-columns: minmax(0, 1fr); }
+  .welcome-proof { grid-template-columns: minmax(0, 1fr); }
+  .welcome-steps-grid,
+  .welcome-trust-grid,
+  .welcome-pricing-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The workspace safety stamp does not belong on the public homepage. */
+.container:has(.welcome-page) ~ .bootstrap-audit-stamp { display: none; }

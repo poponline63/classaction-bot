@@ -174,6 +174,12 @@ export default function KimiAppShell({
     };
   }, []);
 
+  // The public marketing homepage renders its own chrome; skip the workspace
+  // shell entirely. (Placed after every hook so hook order stays stable.)
+  if (pathname.startsWith('/welcome')) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="kimi-shell">
       {mobileOpen && (

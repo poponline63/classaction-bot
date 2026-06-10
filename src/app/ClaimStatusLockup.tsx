@@ -134,6 +134,8 @@ export default function ClaimStatusLockup({
   hostedEnvIncomplete?: boolean;
 }) {
   const pathname = usePathname();
+  // The public marketing homepage carries no workspace status chrome.
+  if (pathname.startsWith('/welcome')) return null;
   const state = getState(pathname, featureEnabled(featureFlags, 'settlement-search'));
   const Icon = state.tone === 'locked'
     ? LockKeyhole

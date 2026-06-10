@@ -157,7 +157,10 @@ function LoginShellFallback() {
 function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPreviewLoginGate }) {
   const searchParams = useSearchParams();
   const next = useMemo(() => searchParams.get('next') || '/', [searchParams]);
-  const [mode, setMode] = useState<Mode>('login');
+  // /login?signup=1 (used by the public homepage CTAs) opens straight into
+  // account creation; Identity settings can still force it back to login.
+  const wantsSignup = useMemo(() => searchParams.get('signup') === '1', [searchParams]);
+  const [mode, setMode] = useState<Mode>(wantsSignup ? 'signup' : 'login');
   const [callbackMode, setCallbackMode] = useState<CallbackMode>(null);
   const [inviteToken, setInviteToken] = useState('');
   const [email, setEmail] = useState('');
