@@ -46,6 +46,6 @@ export async function POST(req: Request) {
       },
     });
   }
-  triggerAutoPipeline(userId);
+  await triggerAutoPipeline(userId);
   return NextResponse.json({ ok: true });
 }

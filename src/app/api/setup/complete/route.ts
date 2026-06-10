@@ -4,6 +4,8 @@ import { currentUserId } from '@lib/auth/current-user';
 import { getUserSubscription } from '@lib/billing/entitlements';
 import { isClientFeatureEnabled } from '@lib/features';
 import { runSetupPipeline } from '@lib/setup-pipeline';
+import { runMatcher } from '@lib/matcher/run-matcher';
+import { queueEligibleClaims } from '@lib/claim-filer/claim-queue';
 import { writeAudit } from '@lib/audit';
 import {
   SETUP_SHADOW_REVIEW_ACK,
@@ -110,13 +112,29 @@ export async function POST(req: Request) {
     },
   });
 
-  void (async () => {
+  if (process.env.NETLIFY === 'true') {
+    // Serverless functions freeze after the response returns, so the pipeline
+    // must finish inside this request. Run the bounded matcher + safe queue
+    // pass here; settlement discovery stays with the scheduled worker, which
+    // refreshes the shared catalog for every user.
     try {
-      await runSetupPipeline(userId);
+      const match = await runMatcher(userId);
+      await queueEligibleClaims(userId);
+      console.log(
+        `[setup] hosted pipeline done: processed=${match.settlementsProcessed} eligible=${match.verdictCounts.ELIGIBLE ?? 0}`,
+      );
     } catch (err) {
-      console.error('[setup] pipeline error:', (err as Error).message);
+      console.error('[setup] hosted pipeline error:', (err as Error).message);
     }
-  })();
+  } else {
+    void (async () => {
+      try {
+        await runSetupPipeline(userId);
+      } catch (err) {
+        console.error('[setup] pipeline error:', (err as Error).message);
+      }
+    })();
+  }
 
   return NextResponse.json({
     ok: true,

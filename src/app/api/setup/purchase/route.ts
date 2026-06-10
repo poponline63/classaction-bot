@@ -57,6 +57,6 @@ export async function POST(req: Request) {
       note: 'Purchase intake audit stores category, dates, presence flags, and digests only; raw merchant/product facts remain in purchases.',
     },
   });
-  triggerAutoPipeline(userId);
+  await triggerAutoPipeline(userId);
   return NextResponse.json({ ok: true });
 }

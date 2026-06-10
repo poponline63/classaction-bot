@@ -69,7 +69,19 @@ export async function runAutoPipeline(userId: number, deps: AutoPipelineDeps = d
   };
 }
 
-export function triggerAutoPipeline(userId: number) {
+export function triggerAutoPipeline(userId: number): Promise<void> | void {
+  // Serverless hosted runtimes freeze as soon as the response is returned, so
+  // a debounced setTimeout would never fire there. Run inline and let the
+  // route await the result instead.
+  if (process.env.NETLIFY === 'true') {
+    return runAutoPipeline(userId).then(
+      () => undefined,
+      (err) => {
+        console.error('[auto-pipeline] error:', (err as Error).message);
+      },
+    );
+  }
+
   if (pendingTimeout) clearTimeout(pendingTimeout);
   pendingTimeout = setTimeout(async () => {
     pendingTimeout = null;

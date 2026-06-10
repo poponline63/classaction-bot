@@ -69,6 +69,6 @@ export async function POST(req: Request) {
       note: 'Profile intake audit stores counts and digests only; raw profile facts remain in the profile table.',
     },
   });
-  triggerAutoPipeline(userId);
+  await triggerAutoPipeline(userId);
   return NextResponse.json({ ok: true });
 }
