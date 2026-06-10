@@ -333,7 +333,7 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
     event.preventDefault();
     if (!canUseNetlifyIdentity()) {
       setIdentityReady(false);
-      setError('Sign-in is available after the site is deployed securely.');
+      setError('Sign-in needs a secure (https) connection. Please reopen ClaimBot at its web address.');
       return;
     }
     setSaving(true);
@@ -377,12 +377,11 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
       }
       setMessage('Check your email to confirm the account, then sign in.');
     } catch (err) {
-      if (err instanceof AuthError) {
-        setError(friendlyAuthError(err.message, err.status));
-      } else {
-        setError('Account sign-in is not available in this environment yet.');
-        setIdentityReady(false);
-      }
+      // A failed attempt should let the customer simply try again; it must not
+      // disable the form or imply the service is unavailable.
+      setError(err instanceof AuthError
+        ? friendlyAuthError(err.message, err.status)
+        : 'We couldn’t sign you in just now. Please try again in a moment.');
     } finally {
       setSaving(false);
     }
@@ -462,10 +461,10 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
 
         {!identityReady && (
           <div className="notice warn login-access-warning">
-            <strong>Sign-in is waiting on account access.</strong>
+            <strong>Sign-in needs a secure connection.</strong>
             <p>
-              The live site must have secure account access enabled before customers get login links.
-              You can still preview this workspace locally while account checks are unfinished.
+              Open ClaimBot at its secure web address (https) to sign in. If you reached this page
+              another way, return to claimbot-app.netlify.app and try again.
             </p>
           </div>
         )}
