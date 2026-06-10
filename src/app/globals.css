@@ -19697,6 +19697,22 @@ body {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
+/* Keep the focus ring visible in dark mode: this block out-specifies the base
+   :focus rule, so restate the accent border + ring at matching specificity. */
+.form input[type="text"]:focus,
+.form input[type="email"]:focus,
+.form input[type="date"]:focus,
+.form input[type="number"]:focus,
+.form input[type="tel"]:focus,
+.form input[type="password"]:focus,
+.form select:focus,
+.form textarea:focus,
+.filter-bar input:focus,
+.filter-bar select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-bg);
+}
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.18);
   background-clip: padding-box;
