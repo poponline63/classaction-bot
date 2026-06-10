@@ -153,7 +153,7 @@ function friendlyAuthError(raw: string, status?: number): string {
 function readIdentityJwtCookie(): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(/(?:^|;\s*)nf_jwt=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 async function syncAppSession(user: IdentitySessionUser | null | undefined) {
