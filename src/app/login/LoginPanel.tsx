@@ -146,8 +146,18 @@ function friendlyAuthError(raw: string, status?: number): string {
   return cleaned ? `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}` : 'Something went wrong signing you in. Please try again.';
 }
 
+// The account library stores the signed-in JWT in a readable nf_jwt cookie on
+// every login path (password, Google/OAuth, email confirmation). The returned
+// user object does not carry the access token, so read the cookie as the
+// reliable source.
+function readIdentityJwtCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)nf_jwt=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 async function syncAppSession(user: IdentitySessionUser | null | undefined) {
-  const token = user?.token?.access_token;
+  const token = user?.token?.access_token ?? readIdentityJwtCookie();
   if (!token) throw new Error('Account access did not return a sign-in token.');
   const response = await fetch('/api/auth/session', {
     method: 'POST',
