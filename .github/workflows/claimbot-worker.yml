@@ -12,7 +12,7 @@ on:
         required: false
         default: "false"
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/30 * * * *"
 
 concurrency:
   group: claimbot-paid-automation-worker

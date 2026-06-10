@@ -19,6 +19,7 @@
     "worker:file-claim:seed": "tsx scripts/seed-worker-file-claim-smoke.ts",
     "worker:file-claim:receipt": "tsx scripts/run-local-worker-file-claim-receipt.ts",
     "worker:github:doctor": "node scripts/github-worker-doctor.cjs",
+    "pipeline:daily": "tsx scripts/run-daily-pipeline.ts",
     "scrape:once": "tsx scripts/scrape-once.ts",
     "scrape:strict": "tsx scripts/scrape-once.ts --strict",
     "enrich:source": "tsx scripts/enrich-source-catalog.ts",

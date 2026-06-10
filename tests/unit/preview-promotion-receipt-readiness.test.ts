@@ -22,6 +22,7 @@ function writeReceipt(root: string, overrides: Record<string, unknown> = {}) {
       'validate:secrets',
       'netlify:doctor:strict',
       'validate:netlify:strict',
+      'validate:routes',
       'validate:hosted',
       'build:hosted',
       'smoke:web',

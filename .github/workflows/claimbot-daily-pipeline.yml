@@ -1,0 +1,78 @@
+name: ClaimBot daily discovery pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_scrape:
+        description: "Skip the settlement scrape and only run matcher/queue"
+        required: false
+        default: "false"
+  schedule:
+    # Daily at 08:13 UTC (~3am US Eastern), before users start their day.
+    - cron: "13 8 * * *"
+
+concurrency:
+  group: claimbot-daily-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  daily-pipeline:
+    name: Scrape sources and refresh matches
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      CLAIM_FILER_MODE: ${{ vars.CLAIM_FILER_MODE || 'shadow' }}
+      SCRAPER_USER_AGENT: ${{ vars.SCRAPER_USER_AGENT }}
+      CLAIMBOT_SUPPORT_EMAIL: ${{ vars.CLAIMBOT_SUPPORT_EMAIL }}
+      HIBP_API_KEY: ${{ secrets.HIBP_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browser runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify pipeline secrets are present
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error title=Missing pipeline secret::DATABASE_URL is required for the daily pipeline."
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" == libsql://* && -z "$DATABASE_AUTH_TOKEN" && -z "$TURSO_AUTH_TOKEN" ]]; then
+            echo "::error title=Missing pipeline secret::libsql DATABASE_URL requires DATABASE_AUTH_TOKEN or TURSO_AUTH_TOKEN."
+            exit 1
+          fi
+
+      - name: Run daily pipeline
+        run: |
+          if [ "${{ github.event.inputs.skip_scrape }}" = "true" ]; then
+            npx tsx scripts/run-daily-pipeline.ts --skip-scrape
+          else
+            npx tsx scripts/run-daily-pipeline.ts
+          fi
+        shell: bash
+
+      - name: Upload pipeline receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: claimbot-daily-pipeline-receipt
+          path: data/daily-pipeline-receipt.json
+          if-no-files-found: error
