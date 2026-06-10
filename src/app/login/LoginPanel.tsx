@@ -292,6 +292,11 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
         if (!active) return;
         setIdentitySettings(settings as IdentitySettings);
         if ((settings as IdentitySettings).disableSignup) setMode('login');
+      } catch {
+        if (active) setIdentityReady(false);
+        return;
+      }
+      try {
         const callback = await handleAuthCallback();
         if (callback?.type === 'invite' && callback.token) {
           setCallbackMode('invite');
@@ -309,8 +314,12 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
           await syncAppSession(user as IdentitySessionUser);
           window.location.href = next;
         }
-      } catch {
-        setIdentityReady(false);
+      } catch (err) {
+        // A bad or already-used email link should not lock the form.
+        if (!active) return;
+        setError(err instanceof AuthError
+          ? friendlyAuthError(err.message, err.status)
+          : 'That email link could not be used. Sign in below, or request a fresh link.');
       }
     }
 
@@ -402,30 +411,15 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
         {error && <div className="notice warn">{error}</div>}
         {message && <div className="notice">{message}</div>}
 
-        <div className="auth-submit-brief" aria-label="Sign-in safety boundary">
-          <ShieldCheck aria-hidden="true" size={18} />
-          <div>
-            <strong>Secure workspace access</strong>
-            <p>
-              Sign-in opens your private review workspace. Paid automation still requires your saved
-              permission, proof checks, account checks, and an activity record before any filing job can run.
-            </p>
-          </div>
-        </div>
-
         <button className="btn" type="submit" disabled={saving || !identityReady}>
           {mode === 'login' ? <LogIn aria-hidden="true" size={16} /> : <UserPlus aria-hidden="true" size={16} />}
           {saving ? 'Working...' : primaryLabel}
         </button>
-        {googleEnabled && !callbackMode ? (
+        {googleEnabled && !callbackMode && (
           <button className="btn ghost" type="button" disabled={!identityReady} onClick={() => oauthLogin('google')}>
             Continue with Google
           </button>
-        ) : !callbackMode ? (
-          <div className="auth-provider-note">
-            Google sign-in appears here after the provider is enabled for this site.
-          </div>
-        ) : null}
+        )}
       </form>
 
       {callbackMode ? (
@@ -446,12 +440,11 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
         <button className="link-button" type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
           {mode === 'login' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
         </button>
-      ) : (
+      ) : identityReady && identitySettings?.disableSignup === true ? (
         <div className="offline-note">
-          Registration is invite-only for this deployment. Use your invitation email, then sign in
-          without changing the filing checks.
+          New registrations are currently closed. If you were invited, use your invitation email.
         </div>
-      )}
+      ) : null}
     </>
   );
 
@@ -478,27 +471,6 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
         )}
 
         {accountEntry}
-
-        <section className="login-simple-after-signin" aria-label="After sign-in summary">
-          <div>
-            <div className="access-brief-kicker">After sign-in</div>
-            <h2>One sign-in, three things stay true.</h2>
-          </div>
-          <div className="login-simple-after-signin-grid">
-            <div>
-              <strong>Private workspace</strong>
-              <span>Review profile facts, matches, permissions, and claim status.</span>
-            </div>
-            <div>
-              <strong>Review mode first</strong>
-              <span>Signing in does not turn on live filing.</span>
-            </div>
-            <div>
-              <strong>Proof stays manual</strong>
-              <span>Documents, purchase records, and uncertain claims still pause for review.</span>
-            </div>
-          </div>
-        </section>
 
         <details className="dashboard-detail-drawer login-access-details" aria-label="More access and safety details">
           <summary>
