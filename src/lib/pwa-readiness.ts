@@ -75,7 +75,7 @@ export function evaluatePwaReadiness(root = process.cwd()) {
         && manifest.id === '/goal'
         && manifest.start_url === '/goal'
         && manifest.display === 'standalone'
-        && manifest.theme_color === '#ffffff'
+        && manifest.theme_color === '#161618'
         && String(manifest.description ?? '').includes('shadow-mode safety checks')
         ? 'pass'
         : 'fail',

@@ -73,11 +73,11 @@ function validateManifest() {
     fail('manifest.theme_color must be a 6-digit hex color.');
   }
 
-  if (manifest.background_color !== '#f5f5f7') {
-    fail('manifest.background_color must match the light app background (#f5f5f7).');
+  if (manifest.background_color !== '#0e0e10') {
+    fail('manifest.background_color must match the dark app background (#0e0e10).');
   }
 
-  if (manifest.theme_color !== '#ffffff') {
+  if (manifest.theme_color !== '#161618') {
     fail('manifest.theme_color must match the Kimi hosted app chrome (#ffffff).');
   }
 
