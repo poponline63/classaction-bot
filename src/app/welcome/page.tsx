@@ -18,6 +18,7 @@ import {
 import { count } from 'drizzle-orm';
 import { db, schema } from '@db/client';
 import { FREE_MONTHLY_CLAIM_LIMIT } from '@lib/billing/entitlements';
+import IdentityTokenRedirect from './IdentityTokenRedirect';
 
 export const revalidate = 3600;
 
@@ -84,6 +85,7 @@ export default async function WelcomePage() {
 
   return (
     <div className="welcome-page">
+      <IdentityTokenRedirect />
       <header className="welcome-nav" aria-label="ClaimBot">
         <Link className="welcome-brand" href="/welcome">
           <ShieldCheck aria-hidden="true" size={22} />

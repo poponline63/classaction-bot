@@ -122,6 +122,30 @@ const firstAccessPathRows = [
   },
 ];
 
+// Account-service errors arrive as machine codes ("invalid_grant: Email not
+// confirmed"). Customers should only ever see plain language.
+function friendlyAuthError(raw: string, status?: number): string {
+  const message = raw.toLowerCase();
+  if (message.includes('email not confirmed')) {
+    return 'Your email isn’t confirmed yet. Open the confirmation email we sent and click the link, then sign in. (Check your spam folder if you don’t see it.)';
+  }
+  if (message.includes('already registered')) {
+    return 'An account with this email already exists. Try signing in instead.';
+  }
+  if (message.includes('invalid login credentials') || message.includes('invalid_grant') || status === 401) {
+    return 'That email and password combination didn’t match. Please try again.';
+  }
+  if (message.includes('rate limit') || status === 429) {
+    return 'Too many attempts in a short time. Please wait a minute and try again.';
+  }
+  if (message.includes('token') && (message.includes('expired') || message.includes('not found') || message.includes('invalid'))) {
+    return 'That link has expired or was already used. Sign in, or request a new email from the sign-in page.';
+  }
+  // Strip any "code:" prefix from unexpected messages before showing them.
+  const cleaned = raw.replace(/^[a-z_]+:\s*/i, '').trim();
+  return cleaned ? `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}` : 'Something went wrong signing you in. Please try again.';
+}
+
 async function syncAppSession(user: IdentitySessionUser | null | undefined) {
   const token = user?.token?.access_token;
   if (!token) throw new Error('Account access did not return a sign-in token.');
@@ -345,7 +369,7 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
       setMessage('Check your email to confirm the account, then sign in.');
     } catch (err) {
       if (err instanceof AuthError) {
-        setError(err.status === 401 ? 'Invalid email or password.' : err.message);
+        setError(friendlyAuthError(err.message, err.status));
       } else {
         setError('Account sign-in is not available in this environment yet.');
         setIdentityReady(false);
