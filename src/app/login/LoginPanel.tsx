@@ -471,10 +471,10 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
 
         {!identityReady && (
           <div className="notice warn login-access-warning">
-            <strong>Sign-in needs a secure connection.</strong>
+            <strong>Sign-in is taking a moment.</strong>
             <p>
-              Open ClaimBot at its secure web address (https) to sign in. If you reached this page
-              another way, return to claimbot-app.netlify.app and try again.
+              We couldn’t load account access just now. Please refresh the page and try again. If it
+              keeps happening, make sure you’re on the official ClaimBot website.
             </p>
           </div>
         )}
