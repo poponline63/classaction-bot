@@ -12,7 +12,17 @@ import {
   signup,
   updateUser,
 } from '@netlify/identity';
-import { CircleUserRound, LockKeyhole, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
+import {
+  ArrowRight,
+  CircleUserRound,
+  Eye,
+  EyeOff,
+  Lock,
+  LockKeyhole,
+  Shield,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -176,10 +186,10 @@ export default function LoginPanel({ clientPreviewGate }: { clientPreviewGate: C
 
 function LoginShellFallback() {
   return (
-    <section className="auth-page">
-      <div className="auth-panel">
-        <div>
-          <div className="eyebrow">Account access</div>
+    <section className="mkt-auth">
+      <div className="mkt-auth-card">
+        <div className="mkt-auth-head">
+          <span className="mkt-mono mkt-auth-eyebrow">Account Access</span>
           <h1>Sign in to ClaimBot</h1>
           <p>Loading account access.</p>
         </div>
@@ -199,6 +209,7 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
   const [inviteToken, setInviteToken] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -397,71 +408,133 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
     }
   }
 
+  const passwordLabel = handlingInvite || handlingRecovery ? 'New password' : 'Password';
   const accountEntry = (
     <>
-      <form className="form login-entry-form" onSubmit={submit}>
+      <form className="mkt-auth-form" onSubmit={submit}>
         {mode === 'signup' && !callbackMode && (
-          <div>
+          <div className="mkt-auth-field">
             <label htmlFor="name">Name</label>
-            <input id="name" type="text" value={name} onChange={(event) => setName(event.target.value)} />
+            <div className="mkt-auth-input">
+              <User className="mkt-auth-input-icon" aria-hidden="true" size={16} />
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Your name"
+              />
+            </div>
           </div>
         )}
         {!callbackMode && (
-          <div>
+          <div className="mkt-auth-field">
             <label htmlFor="email">Email</label>
-            <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <div className="mkt-auth-input">
+              <User className="mkt-auth-input-icon" aria-hidden="true" size={16} />
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
           </div>
         )}
-        <div>
-          <label htmlFor="password">{handlingInvite || handlingRecovery ? 'New password' : 'Password'}</label>
-          <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <div className="mkt-auth-field">
+          <label htmlFor="password">{passwordLabel}</label>
+          <div className="mkt-auth-input">
+            <Lock className="mkt-auth-input-icon" aria-hidden="true" size={16} />
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              required
+            />
+            <button
+              type="button"
+              className="mkt-auth-eye"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOff aria-hidden="true" size={16} /> : <Eye aria-hidden="true" size={16} />}
+            </button>
+          </div>
         </div>
 
-        {error && <div className="notice warn">{error}</div>}
-        {message && <div className="notice">{message}</div>}
+        {error && <div className="mkt-auth-error" role="alert">{error}</div>}
+        {message && <div className="mkt-auth-message">{message}</div>}
 
-        <button className="btn" type="submit" disabled={saving || !identityReady}>
-          {mode === 'login' ? <LogIn aria-hidden="true" size={16} /> : <UserPlus aria-hidden="true" size={16} />}
-          {saving ? 'Working...' : primaryLabel}
+        {/* Secure workspace note */}
+        <div className="mkt-auth-note">
+          <Lock aria-hidden="true" size={16} />
+          <p>
+            Sign-in opens your private review workspace. Paid automation still requires your saved
+            permission, proof checks, account checks, and an activity record before any filing job
+            can run.
+          </p>
+        </div>
+
+        <button className="mkt-auth-submit" type="submit" disabled={saving || !identityReady}>
+          {saving ? (
+            <span className="mkt-auth-spinner" aria-hidden="true" />
+          ) : (
+            <>
+              <ArrowRight aria-hidden="true" size={16} />
+              {primaryLabel}
+            </>
+          )}
         </button>
         {googleEnabled && !callbackMode && (
-          <button className="btn ghost" type="button" disabled={!identityReady} onClick={() => oauthLogin('google')}>
+          <button className="mkt-auth-google" type="button" disabled={!identityReady} onClick={() => oauthLogin('google')}>
             Continue with Google
           </button>
         )}
       </form>
 
-      {callbackMode ? (
-        <button
-          className="link-button"
-          type="button"
-          onClick={() => {
-            setCallbackMode(null);
-            setInviteToken('');
-            setPassword('');
-            setMessage('');
-            setMode('login');
-          }}
-        >
-          Return to sign in
-        </button>
-      ) : signupEnabled ? (
-        <button className="link-button" type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
-          {mode === 'login' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
-        </button>
-      ) : identityReady && identitySettings?.disableSignup === true ? (
-        <div className="offline-note">
-          New registrations are currently closed. If you were invited, use your invitation email.
-        </div>
-      ) : null}
+      <div className="mkt-auth-altrow">
+        {callbackMode ? (
+          <button
+            className="mkt-auth-link"
+            type="button"
+            onClick={() => {
+              setCallbackMode(null);
+              setInviteToken('');
+              setPassword('');
+              setMessage('');
+              setMode('login');
+            }}
+          >
+            Return to sign in
+          </button>
+        ) : signupEnabled ? (
+          <button className="mkt-auth-link" type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+            {mode === 'login' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
+          </button>
+        ) : identityReady && identitySettings?.disableSignup === true ? (
+          <div className="offline-note">
+            New registrations are currently closed. If you were invited, use your invitation email.
+          </div>
+        ) : null}
+      </div>
     </>
   );
 
   return (
-    <section className="auth-page">
-      <div className="auth-panel">
-        <div>
-          <div className="eyebrow">Account access</div>
+    <section className="mkt-auth">
+      <Link className="mkt-auth-back" href="/">
+        <Shield aria-hidden="true" size={18} />
+        <span>ClaimBot</span>
+      </Link>
+
+      <div className="mkt-auth-card">
+        <div className="mkt-auth-head">
+          <span className="mkt-mono mkt-auth-eyebrow">Account Access</span>
           <h1>{authTitle}</h1>
           <p>
             Sign in to your private ClaimBot workspace to review matches, profile facts, saved
@@ -470,7 +543,7 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
         </div>
 
         {!identityReady && (
-          <div className="notice warn login-access-warning">
+          <div className="mkt-auth-message login-access-warning">
             <strong>Sign-in is taking a moment.</strong>
             <p>
               We couldn’t load account access just now. Please refresh the page and try again. If it
@@ -480,6 +553,24 @@ function LoginPanelContent({ clientPreviewGate }: { clientPreviewGate: ClientPre
         )}
 
         {accountEntry}
+
+        {/* After sign-in info */}
+        <div className="mkt-auth-after">
+          <span className="mkt-mono">After sign-in</span>
+          <h3>One sign-in, three things stay true.</h3>
+          <div className="mkt-auth-after-grid">
+            {[
+              { title: 'Private workspace', desc: 'Review profile facts, matches, permissions, and claim status.' },
+              { title: 'Review mode first', desc: 'Signing in does not turn on live filing.' },
+              { title: 'Proof stays manual', desc: 'Documents, purchase records, and uncertain claims still pause for review.' },
+            ].map((item) => (
+              <div className="mkt-auth-after-item" key={item.title}>
+                <p className="mkt-auth-after-title">{item.title}</p>
+                <p className="mkt-auth-after-desc">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <details className="dashboard-detail-drawer login-access-details" aria-label="More access and safety details">
           <summary>

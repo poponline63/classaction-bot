@@ -25,12 +25,29 @@
   --glow: 0 0 20px rgba(123, 97, 255, 0.3), 0 0 40px rgba(123, 97, 255, 0.15);
   --card-shadow: 0 8px 32px rgba(123, 97, 255, 0.2);
 
-  background: var(--void);
+  /* Transparent so the fixed DocumentTunnel canvas (z-index 0) shows through.
+     The solid void backdrop lives in .mkt-bg-static below — that layer is also
+     the permanent backdrop for reduced-motion / no-WebGL visitors. */
+  background: transparent;
   color: var(--paper);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* Static WebGL-free backdrop. Always rendered (even server-side, before the
+   heavy Three.js scene loads) so there's never a white flash, and it's the
+   only backdrop when the animated tunnel is suppressed. */
+.mkt-bg-static {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(123, 97, 255, 0.12), transparent 60%),
+    radial-gradient(100% 70% at 50% 100%, rgba(74, 144, 217, 0.08), transparent 55%),
+    #050508;
 }
 
 .mkt h1, .mkt h2, .mkt h3 {
@@ -269,24 +286,132 @@
 
 @media (max-width: 860px) { .mkt-grid-2 { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---- Login wrapped in marketing chrome ---------------------------------- */
-.mkt-login { padding-top: 64px; }
-.mkt-login .auth-page { min-height: auto; padding: 48px 24px 64px; display: flex; justify-content: center; }
-.mkt-login .auth-panel {
-  background: rgba(10, 10, 15, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* ---- Login (Kimi focused auth screen) ----------------------------------- */
+/* The login route renders bare .mkt with the DocumentTunnel backdrop and a
+   centered glass card — no marketing nav/footer. */
+.mkt-auth-page { min-height: 100vh; }
+.mkt-auth {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 16px 48px;
+}
+
+.mkt-auth-back {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(245, 240, 235, 0.7);
+  transition: color 0.2s;
+}
+.mkt-auth-back:hover { color: var(--purple); }
+.mkt-auth-back svg { color: var(--purple); }
+.mkt-auth-back span { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; }
+
+.mkt-auth-card {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(10, 10, 15, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--mkt-border);
   border-radius: 16px;
-  max-width: 460px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  padding: 32px;
 }
-.mkt-login .auth-panel h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.01em; color: var(--paper); }
-.mkt-login .auth-panel .eyebrow { color: var(--purple); }
-.mkt-login .auth-panel p { color: rgba(245, 240, 235, 0.8); }
-.mkt-login .form label { color: rgba(245, 240, 235, 0.75); }
-.mkt-login .form input { background: rgba(245, 240, 235, 0.05); border-color: var(--mkt-border); color: var(--paper); border-radius: 12px; }
-.mkt-login .form input:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(123, 97, 255, 0.15); }
-.mkt-login .btn { background: var(--purple); color: var(--paper); border-radius: 999px; }
-.mkt-login .btn:hover { background: rgba(123, 97, 255, 0.85); box-shadow: var(--glow); }
-.mkt-login .btn.ghost { background: rgba(245, 240, 235, 0.08); border-color: var(--mkt-border); color: var(--paper); }
-.mkt-login .link-button { color: var(--purple); }
+
+.mkt-auth-head { text-align: center; margin-bottom: 28px; }
+.mkt-auth-eyebrow { color: var(--purple); }
+.mkt-auth-head h1 { margin-top: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.01em; color: var(--paper); }
+.mkt-auth-head p { margin: 10px 0 0; font-size: 14px; line-height: 1.55; color: var(--warm-gray); }
+
+/* ---- Form ---- */
+.mkt-auth-form { display: grid; gap: 16px; }
+.mkt-auth-field { display: grid; gap: 6px; }
+.mkt-auth-field label { font-size: 14px; color: var(--paper); }
+.mkt-auth-input { position: relative; }
+.mkt-auth-input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--warm-gray); pointer-events: none; }
+.mkt-auth-input input {
+  width: 100%;
+  padding: 12px 14px 12px 38px;
+  background: rgba(245, 240, 235, 0.05);
+  border: 1px solid rgba(245, 240, 235, 0.1);
+  border-radius: 12px;
+  color: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.mkt-auth-input input::placeholder { color: rgba(138, 129, 120, 0.6); }
+.mkt-auth-input input:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(123, 97, 255, 0.15); }
+.mkt-auth-input:has(.mkt-auth-eye) input { padding-right: 40px; }
+.mkt-auth-eye {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  background: none; border: 0; border-radius: 8px;
+  color: var(--warm-gray); cursor: pointer; transition: color 0.15s, background 0.15s;
+}
+.mkt-auth-eye:hover { color: var(--paper); background: rgba(245, 240, 235, 0.06); }
+
+.mkt-auth-error { padding: 12px; border-radius: 12px; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.25); color: #fca5a5; font-size: 13px; line-height: 1.5; }
+.mkt-auth-message { padding: 12px; border-radius: 12px; background: rgba(123, 97, 255, 0.1); border: 1px solid rgba(123, 97, 255, 0.22); color: rgba(245, 240, 235, 0.85); font-size: 13px; line-height: 1.5; }
+.mkt-auth-message strong { display: block; margin-bottom: 4px; color: var(--paper); }
+.mkt-auth-message p { margin: 0; }
+
+.mkt-auth-note { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 12px; background: rgba(123, 97, 255, 0.1); border: 1px solid rgba(123, 97, 255, 0.2); }
+.mkt-auth-note svg { color: var(--purple); flex: 0 0 auto; margin-top: 2px; }
+.mkt-auth-note p { margin: 0; font-size: 12px; line-height: 1.55; color: rgba(245, 240, 235, 0.72); }
+
+.mkt-auth-submit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 12px; min-height: 48px;
+  background: var(--purple); color: var(--paper);
+  border: 0; border-radius: 12px;
+  font: inherit; font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+.mkt-auth-submit:hover:not(:disabled) { background: rgba(123, 97, 255, 0.82); box-shadow: var(--glow); }
+.mkt-auth-submit:disabled { opacity: 0.5; cursor: default; }
+.mkt-auth-google {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 100%; padding: 12px; min-height: 48px;
+  background: rgba(245, 240, 235, 0.08); color: var(--paper);
+  border: 1px solid var(--mkt-border); border-radius: 12px;
+  font: inherit; font-size: 15px; cursor: pointer; transition: background 0.2s;
+}
+.mkt-auth-google:hover:not(:disabled) { background: rgba(245, 240, 235, 0.16); }
+.mkt-auth-google:disabled { opacity: 0.5; cursor: default; }
+
+.mkt-auth-spinner { width: 20px; height: 20px; border-radius: 999px; border: 2px solid rgba(245, 240, 235, 0.3); border-top-color: var(--paper); animation: mkt-spin 0.7s linear infinite; }
+@keyframes mkt-spin { to { transform: rotate(360deg); } }
+
+.mkt-auth-altrow { margin-top: 16px; text-align: center; }
+.mkt-auth-link { background: none; border: 0; padding: 0; color: var(--purple); font: inherit; font-size: 14px; cursor: pointer; }
+.mkt-auth-link:hover { text-decoration: underline; }
+
+/* ---- After sign-in ---- */
+.mkt-auth-after { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(245, 240, 235, 0.1); }
+.mkt-auth-after h3 { margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px; color: var(--paper); }
+.mkt-auth-after-grid { margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mkt-auth-after-item { padding: 12px; border-radius: 12px; background: rgba(245, 240, 235, 0.05); border: 1px solid rgba(245, 240, 235, 0.06); }
+.mkt-auth-after-title { margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; color: var(--paper); }
+.mkt-auth-after-desc { margin: 4px 0 0; font-size: 10px; line-height: 1.5; color: var(--warm-gray); }
+
+/* Retained operator/launch detail surfaces (collapsed by default) keep the
+   app's globals styling; just give them spacing inside the glass card. */
+.mkt-auth-card .login-access-details { margin-top: 24px; }
+.mkt-auth-card .auth-panel-links { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+@media (max-width: 520px) {
+  .mkt-auth-after-grid { grid-template-columns: minmax(0, 1fr); }
+  .mkt-auth-card { padding: 24px; }
+}
