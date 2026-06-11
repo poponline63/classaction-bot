@@ -6,6 +6,11 @@ export const MARKETING_PREFIXES = [
   '/how-it-works',
   '/faq',
   '/about',
+  '/pricing',
+  '/contact',
+  '/privacy-policy',
+  '/terms',
+  '/login',
 ];
 
 export function isMarketingPath(pathname: string): boolean {

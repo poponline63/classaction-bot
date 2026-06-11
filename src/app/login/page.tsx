@@ -7,6 +7,7 @@ import {
   clientSafeRequiredInputLabel,
 } from '@lib/client-safe-launch-copy';
 import LoginPanel, { type ClientPreviewLoginGate } from './LoginPanel';
+import MktShell from '../_marketing/MktShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,5 +49,11 @@ export default async function LoginPage() {
       },
     }));
 
-  return <LoginPanel clientPreviewGate={clientPreviewGate} />;
+  return (
+    <MktShell>
+      <div className="mkt-login">
+        <LoginPanel clientPreviewGate={clientPreviewGate} />
+      </div>
+    </MktShell>
+  );
 }

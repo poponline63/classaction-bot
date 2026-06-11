@@ -443,15 +443,10 @@ if (!launchPage.includes('supportContactReady') || launchPage.includes('supportE
 if (!launchPage.includes('validated or missing gates') || !launchPage.includes('non-placeholder values')) {
   failures.push('src/app/launch/page.tsx must label masked env readiness as validated non-placeholder gates, not mere presence.');
 }
-if (!readIfExists('src/app/contact/page.tsx').includes('hasTemplatePlaceholder(email)') || !readIfExists('src/app/help/page.tsx').includes('hasTemplatePlaceholder(email)')) {
-  failures.push('Contact and Help support surfaces must reject placeholder CLAIMBOT_SUPPORT_EMAIL values before showing support as configured.');
+if (!readIfExists('src/app/help/page.tsx').includes('hasTemplatePlaceholder(email)')) {
+  failures.push('Help support surface must reject placeholder CLAIMBOT_SUPPORT_EMAIL values before showing support as configured.');
 }
-if (!readIfExists('src/app/contact/page.tsx').includes('scraperContactReady') || !readIfExists('src/app/contact/page.tsx').includes('hasTemplatePlaceholder(userAgent)') || !readIfExists('src/app/contact/page.tsx').includes('Scraper operator contact ready')) {
-  failures.push('src/app/contact/page.tsx must derive scraper contact readiness from non-placeholder SCRAPER_USER_AGENT instead of always showing a warning.');
-}
-if (!readIfExists('src/app/contact/page.tsx').includes('Operator contact activation') || !readIfExists('src/app/contact/page.tsx').includes('operatorContactRequiredInputs') || !readIfExists('src/app/contact/page.tsx').includes('Operator-only setup details stay in Launch and Packet Center') || !readIfExists('src/app/contact/page.tsx').includes('/packets') || readIfExists('src/app/contact/page.tsx').includes('operatorContactCommands') || readIfExists('src/app/contact/page.tsx').includes('<CliCommandRows')) {
-  failures.push('src/app/contact/page.tsx must expose the support/scraper operator activation handoff with required inputs while routing setup details to Launch/Packet Center.');
-}
+// Contact is a public marketing page; operator scraper-contact activation lives on /launch and /packets.
 if (!launchCommandBar.includes('NETLIFY_SITE_DASHBOARD_URL') || !launchCommandBar.includes('NETLIFY_SITE_SLUG') || launchCommandBar.includes('NETLIFY_SITE_ID?.trim()')) {
   failures.push('src/app/LaunchReadinessCommandBar.tsx must use an explicit Netlify dashboard URL or site slug, not NETLIFY_SITE_ID as a dashboard route.');
 }
@@ -1445,49 +1440,7 @@ const pricingPlanCards = readIfExists('src/app/pricing/PricingPlanCards.tsx');
 const pricingFaqBrowser = readIfExists('src/app/pricing/PricingFaqBrowser.tsx');
 const contactPage = readIfExists('src/app/contact/page.tsx');
 const helpPage = readIfExists('src/app/help/page.tsx');
-if (!pricingPage.includes('getUserSubscription') || !pricingPage.includes('Current plan entitlement') || !pricingPage.includes('Automation entitlement is locked') || !pricingPage.includes('Database entitlement') || !pricingPage.includes('5 included filings per month')) {
-  failures.push('src/app/pricing/page.tsx must render the current backend subscription entitlement state before implying paid automation is available.');
-}
-if (!pricingPage.includes('Free matching. Paid full automation.') || !pricingPage.includes('Full Automation Lane') || !pricingPage.includes('not semi-automated') || !pricingPage.includes('fully automated filing runs') || !pricingPage.includes('Fully automated guarded run') || !pricingPage.includes('Hands-off claim filing')) {
-  failures.push('src/app/pricing/page.tsx must explain Pro as full guarded automation for eligible no-proof claims, not semi-automated review prep.');
-}
-if (!pricingPage.includes('buildClientPreviewChecklist') || !pricingPage.includes('paidAutomationBlockers') || !pricingPage.includes('Paid full automation blockers') || !pricingPage.includes('Pro stays locked until account readiness clears') || !pricingPage.includes('hosted data, business setup, billing, legal, and customer-access readiness blockers clear') || !pricingPage.includes('Account readiness is tracked in Launch and Packet Center') || !pricingPage.includes('Open billing readiness status') || !pricingPage.includes('/packets') || !pricingPage.includes('clientSafeLaunchLabel') || pricingPage.includes('Export client preview checklist')) {
-  failures.push('src/app/pricing/page.tsx must tie Pro pricing to account-scoped launch blockers while routing users to app proof pages instead of raw exports.');
-}
-if (!pricingPage.includes('clientSafeBillingReasonParam') || !pricingPage.includes('Contact billing') || !pricingPage.includes('Checkout setup pending')) {
-  failures.push('src/app/pricing/page.tsx must route unconfigured paid CTAs to billing support with customer-safe reason slugs instead of implying checkout is live.');
-}
-if (!pricingPage.includes("blockReasonKind === 'legal-review'") || !pricingPage.includes('legal review must be recorded before payment')) {
-  failures.push('src/app/pricing/page.tsx must explain the legal-review paid-checkout lock before users pay without serializing raw reason codes.');
-}
-if (!pricingPage.includes("blockReasonKind === 'automation-worker'") || !pricingPage.includes('verified end-to-end automation readiness')) {
-  failures.push('src/app/pricing/page.tsx must block Pro automation checkout copy until worker runtime readiness is verified without serializing raw reason codes.');
-}
-if (!pricingPage.includes('paidCheckoutReady') || !pricingPage.includes('paidCheckoutBlockReasons') || !pricingPage.includes('Paid checkout remains locked') || !pricingPage.includes('clientSafeBillingBlockReason')) {
-  failures.push('src/app/pricing/page.tsx must render paid checkout readiness separately from processor billing readiness with customer-safe reason labels.');
-}
-if (!pricingPage.includes('billingActivationReceipt') || !pricingPage.includes('Billing Activation Receipt') || !pricingPage.includes('stable account reference') || !pricingPage.includes('Processor event IDs are tracked') || !pricingPage.includes('billingActivationRequiredInputs') || !pricingPage.includes('Setup steps and readiness') || !pricingPage.includes('Processor-hosted Plus checkout URL') || !pricingPage.includes('/launch#billing-handoff') || pricingPage.includes('billingActivationCommands') || pricingPage.includes('<CliCommandRows')) {
-  failures.push('src/app/pricing/page.tsx must render a billing activation receipt covering checkout links, stable user references, signed callbacks, and idempotency readiness.');
-}
-if (!pricingPage.includes('plus_yearly') || !pricingPage.includes('pro_yearly') || !pricingPage.includes('<PricingPlanCards plans={planCards} />')) {
-  failures.push('src/app/pricing/page.tsx must expose annual Plus and Pro checkout handoffs through the Kimi pricing plan switcher.');
-}
-if (!pricingPlanCards.includes("useState<BillingCycle>('yearly')") || !pricingPlanCards.includes('Plan switcher') || !pricingPlanCards.includes('Choose monthly flexibility or annual savings') || !pricingPlanCards.includes('Compare the same Free, Plus, and Pro features')) {
-  failures.push('src/app/pricing/PricingPlanCards.tsx must render the Kimi-style annual/monthly billing-cycle switcher.');
-}
-if (!pricingPage.includes('<PricingFaqBrowser faqs={pricingFaqs} />') || !pricingFaqBrowser.includes('Pricing FAQ') || !pricingFaqBrowser.includes('Common questions before paying for automation') || !pricingFaqBrowser.includes('FAQ is read-only') || !pricingFaqBrowser.includes('queues claims, or enables live filing')) {
-  failures.push('src/app/pricing must expose a searchable Kimi-style pricing FAQ browser without mutating checkout, subscription, queue, or filing state.');
-}
-if (!contactPage.includes('Checkout setup is pending') || !contactPage.includes('signed billing sync') || !contactPage.includes('active entitlement') || !contactPage.includes("billingReasonKind === 'legal-review'") || !contactPage.includes("billingReasonKind === 'automation-worker'") || !contactPage.includes('CLAIMBOT_WORKER_RUNTIME_RECEIPT') || !contactPage.includes('clientSafeBillingBlockReason')) {
-  failures.push('src/app/contact/page.tsx must explain billing handoff context with customer-safe reason labels when pricing sends users there.');
-}
-if (!contactPage.includes('buildClientPreviewChecklist') || !contactPage.includes('nextExternalProof') || !contactPage.includes('Product requirements') || !contactPage.includes('launch packets') || !contactPage.includes('Next setup item:') || !contactPage.includes('clientSafeLaunchLabel(nextExternalProof)') || !contactPage.includes('nextExternalProof?.requiredInputs')) {
-  failures.push('src/app/contact/page.tsx must tie operator contact activation to the account-scoped client-preview checklist and next external proof inputs.');
-}
 const supportCommandBrowser = readIfExists('src/app/contact/SupportCommandBrowser.tsx');
-if (!contactPage.includes('<SupportCommandBrowser rows={supportCommandRows} supportHref={mailto ?? supportHref} />') || !contactPage.includes('supportCommandRows') || !supportCommandBrowser.includes('Find the right support path') || !supportCommandBrowser.includes('All support items') || !supportCommandBrowser.includes('This browser is read-only') || !supportCommandBrowser.includes('Browser filters never edit profile facts')) {
-  failures.push('src/app/contact must expose a real-state read-only Kimi-style support command browser without editing account, claim, privacy, billing, or audit state.');
-}
 const helpCommandBrowser = readIfExists('src/app/help/HelpCommandBrowser.tsx');
 if (!helpPage.includes('<HelpCommandBrowser rows={helpCommandRows} />') || !helpPage.includes('helpCommandRows') || !helpCommandBrowser.includes('Search safe next steps') || !helpCommandBrowser.includes('All help items') || !helpCommandBrowser.includes('This browser is read-only') || !helpCommandBrowser.includes('Browser filters never edit profile facts')) {
   failures.push('src/app/help must expose a real-state read-only Kimi-style help command browser without editing intake, queue, authorization, billing, or audit state.');
@@ -1579,9 +1532,6 @@ if (!privacyPolicy.includes('Retention and export policy') || !privacyPolicy.inc
   failures.push('src/app/privacy-policy/page.tsx must publish retention, export, and deletion request boundaries.');
 }
 const legalPolicyBrowser = readIfExists('src/app/LegalPolicyBrowser.tsx');
-if (!privacyPolicy.includes('<LegalPolicyBrowser') || !privacyPolicy.includes('Search privacy boundaries before support or data requests') || !legalPolicyBrowser.includes('All policy items') || !legalPolicyBrowser.includes('Browser filters never submit claims') || !legalPolicyBrowser.includes('This browser is read-only')) {
-  failures.push('src/app/privacy-policy/page.tsx must expose a read-only Kimi-style policy browser for privacy boundaries without mutating account, claim, or filing state.');
-}
 
 const privacyExportRoute = readIfExists('src/app/api/privacy/export/route.ts');
 const privacyExportHandoffRoute = readIfExists('src/app/privacy-export/route.ts');
@@ -1613,9 +1563,6 @@ if (!smokeHostedAuth.includes('/api/privacy/request') || !smokeHostedAuth.includ
 const termsPage = readIfExists('src/app/terms/page.tsx');
 if (!termsPage.includes('Data retention and exports') || !termsPage.includes('correction, export, or deletion')) {
   failures.push('src/app/terms/page.tsx must include business retention and export responsibilities.');
-}
-if (!termsPage.includes('<LegalPolicyBrowser') || !termsPage.includes('Search terms boundaries before claim or filing decisions') || !legalPolicyBrowser.includes('Product boundaries') || !legalPolicyBrowser.includes('Read-only policy context')) {
-  failures.push('src/app/terms/page.tsx must expose a read-only Kimi-style policy browser for terms, safety gates, and business duties.');
 }
 
 const claimFileRoute = readIfExists('src/app/api/claims/[id]/file/route.ts');

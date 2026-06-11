@@ -70,7 +70,7 @@ const plans = [
     features: ['Unlimited matching and review', `${FREE_MONTHLY_CLAIM_LIMIT} guarded filings per month`, 'Eligibility checker', 'Alerts for new matches'],
   },
   {
-    label: 'Auto-File', name: 'Plus', price: '$9', period: '/mo',
+    label: 'Automatic', name: 'Plus', price: '$9', period: '/mo',
     desc: 'Everything in Free, plus hands-off filing.', featured: true,
     features: ['Everything in Free', 'Automatic guarded filing', 'Saved profile & reminders', 'Priority match alerts', 'Payout tracking dashboard'],
   },

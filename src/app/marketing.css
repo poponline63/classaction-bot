@@ -268,3 +268,25 @@
 .mkt-about-statement p { font-size: 18px; line-height: 1.7; color: rgba(245, 240, 235, 0.85); }
 
 @media (max-width: 860px) { .mkt-grid-2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Login wrapped in marketing chrome ---------------------------------- */
+.mkt-login { padding-top: 64px; }
+.mkt-login .auth-page { min-height: auto; padding: 48px 24px 64px; display: flex; justify-content: center; }
+.mkt-login .auth-panel {
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--mkt-border);
+  border-radius: 16px;
+  max-width: 460px;
+}
+.mkt-login .auth-panel h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.01em; color: var(--paper); }
+.mkt-login .auth-panel .eyebrow { color: var(--purple); }
+.mkt-login .auth-panel p { color: rgba(245, 240, 235, 0.8); }
+.mkt-login .form label { color: rgba(245, 240, 235, 0.75); }
+.mkt-login .form input { background: rgba(245, 240, 235, 0.05); border-color: var(--mkt-border); color: var(--paper); border-radius: 12px; }
+.mkt-login .form input:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(123, 97, 255, 0.15); }
+.mkt-login .btn { background: var(--purple); color: var(--paper); border-radius: 999px; }
+.mkt-login .btn:hover { background: rgba(123, 97, 255, 0.85); box-shadow: var(--glow); }
+.mkt-login .btn.ghost { background: rgba(245, 240, 235, 0.08); border-color: var(--mkt-border); color: var(--paper); }
+.mkt-login .link-button { color: var(--purple); }
