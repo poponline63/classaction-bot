@@ -19608,29 +19608,32 @@ summary:focus-visible {
 /* Dark is the product theme. The token block below applies unconditionally;
    the light values earlier in the cascade act only as fallbacks. */
 :root {
-  --bg: #0e0e10;
-  --bg2: #0e0e10;
-  --panel: #161618;
-  --panel-hover: #1d1d20;
-  --surface: #222226;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-light: rgba(255, 255, 255, 0.16);
-  --border-hover: rgba(255, 255, 255, 0.24);
-  --fill: rgba(255, 255, 255, 0.06);
-  --fill-strong: rgba(255, 255, 255, 0.1);
-  --text: #f5f5f7;
-  --text-secondary: #b3b3ba;
-  --muted: #86868e;
+  /* Kimi workspace palette — void background, cream paper text, claim-purple
+     accent, warm-gray muted, settlement-green. Matches the marketing .mkt
+     system so the logged-in app and the public site read as one product. */
+  --bg: #0a0a0f;
+  --bg2: #0a0a0f;
+  --panel: #131318;
+  --panel-hover: #1a1a22;
+  --surface: #20202a;
+  --border: rgba(245, 240, 235, 0.1);
+  --border-light: rgba(245, 240, 235, 0.16);
+  --border-hover: rgba(245, 240, 235, 0.26);
+  --fill: rgba(245, 240, 235, 0.06);
+  --fill-strong: rgba(245, 240, 235, 0.1);
+  --text: #f5f0eb;
+  --text-secondary: #c2bbb0;
+  --muted: #8a8580;
 
-  --accent: #7d7aff;
-  --accent-dim: #8e8bff;
-  --accent-bg: rgba(125, 122, 255, 0.14);
-  --accent-border: rgba(125, 122, 255, 0.36);
-  --accent-glow: rgba(125, 122, 255, 0.24);
-  --purple: #7d7aff;
+  --accent: #7b61ff;
+  --accent-dim: #9582ff;
+  --accent-bg: rgba(123, 97, 255, 0.14);
+  --accent-border: rgba(123, 97, 255, 0.36);
+  --accent-glow: rgba(123, 97, 255, 0.24);
+  --purple: #7b61ff;
 
-  --good: #32d74b;
-  --good-bg: rgba(50, 215, 75, 0.13);
+  --good: #34d399;
+  --good-bg: rgba(52, 211, 153, 0.13);
   --warn: #ffb340;
   --warn-bg: rgba(255, 159, 10, 0.14);
   --bad: #ff6961;
@@ -19642,35 +19645,46 @@ summary:focus-visible {
   --shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
   --shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.4);
 
-  --bg-primary: #0e0e10;
-  --bg-secondary: #0e0e10;
-  --bg-tertiary: #161618;
-  --bg-elevated: #222226;
-  --text-primary: #f5f5f7;
-  --text-muted: #86868e;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0a0a0f;
+  --bg-tertiary: #131318;
+  --bg-elevated: #20202a;
+  --text-primary: #f5f0eb;
+  --text-muted: #8a8580;
 
-  --mode-shadow: #32d74b;
-  --mode-shadow-bg: rgba(50, 215, 75, 0.12);
-  --mode-shadow-border: rgba(50, 215, 75, 0.28);
+  --mode-shadow: #34d399;
+  --mode-shadow-bg: rgba(52, 211, 153, 0.12);
+  --mode-shadow-border: rgba(52, 211, 153, 0.28);
   --mode-live: #ffb340;
   --mode-live-bg: rgba(255, 159, 10, 0.13);
   --mode-live-border: rgba(255, 159, 10, 0.35);
 }
 
 body {
-  background: #0e0e10;
+  background: #0a0a0f;
+}
+
+/* Space Grotesk headings inside the workspace shell, matching the Kimi
+   marketing surface (the @font-face is declared in marketing.css, imported
+   globally). No negative tracking — globals.css guardrail forbids it. */
+.kimi-shell h1,
+.kimi-shell h2,
+.kimi-shell h3,
+.kimi-shell h4,
+.kimi-topbar-page-label {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .kimi-sidebar,
 .mobile-bottom-nav {
-  background: rgba(18, 18, 21, 0.85);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(13, 13, 18, 0.88);
+  border-color: rgba(245, 240, 235, 0.08);
 }
 
 .kimi-topbar,
 .welcome-nav {
-  background: rgba(14, 14, 16, 0.75);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 15, 0.78);
+  border-color: rgba(245, 240, 235, 0.08);
 }
 
 .btn.ghost {
