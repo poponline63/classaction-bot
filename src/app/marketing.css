@@ -1,0 +1,270 @@
+/* =============================================================================
+   Marketing surface styles (Kimi "Never Miss A Settlement" design system).
+   Everything is scoped under .mkt so it never touches the product app, which
+   keeps its own globals.css token system. This file is intentionally separate
+   from globals.css.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/space-grotesk.woff2') format('woff2');
+}
+
+.mkt {
+  --void: #0a0a0f;
+  --deep-void: #0f0f14;
+  --paper: #f5f0eb;
+  --purple: #7b61ff;
+  --purple-soft: rgba(123, 97, 255, 0.4);
+  --warm-gray: #8a8178;
+  --green: #4ade80;
+  --mkt-border: rgba(245, 240, 235, 0.1);
+  --glow: 0 0 20px rgba(123, 97, 255, 0.3), 0 0 40px rgba(123, 97, 255, 0.15);
+  --card-shadow: 0 8px 32px rgba(123, 97, 255, 0.2);
+
+  background: var(--void);
+  color: var(--paper);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.mkt h1, .mkt h2, .mkt h3 {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+}
+
+.mkt a { color: inherit; text-decoration: none; }
+
+/* ---- Nav ---------------------------------------------------------------- */
+.mkt-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(245, 240, 235, 0.05);
+}
+.mkt-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mkt-brand { display: inline-flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: var(--paper); }
+.mkt-brand svg { color: var(--purple); }
+.mkt-nav-links { display: flex; align-items: center; gap: 32px; }
+.mkt-nav-links a { font-size: 14px; color: rgba(245, 240, 235, 0.8); transition: color 0.2s; min-height: 44px; display: inline-flex; align-items: center; }
+.mkt-nav-links a:hover { color: var(--purple); }
+.mkt-signin {
+  padding: 0 20px;
+  height: 40px;
+  background: var(--purple);
+  color: var(--paper) !important;
+  border-radius: 999px;
+  font-weight: 500;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.mkt-signin:hover { background: rgba(123, 97, 255, 0.85); box-shadow: var(--glow); transform: scale(1.05); }
+.mkt-menu-btn { display: none; background: none; border: 0; color: var(--paper); cursor: pointer; padding: 8px; }
+.mkt-mobile-menu { display: none; }
+
+/* ---- Buttons ----------------------------------------------------------- */
+.mkt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 32px;
+  height: 56px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+  border: 0;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.mkt .mkt-btn-light { background: var(--paper); color: var(--void); }
+.mkt-btn-light:hover { background: var(--purple); color: var(--paper); box-shadow: var(--glow); transform: scale(1.04); }
+.mkt .mkt-btn-purple { background: var(--purple); color: var(--paper); }
+.mkt-btn-purple:hover { background: rgba(123, 97, 255, 0.85); box-shadow: var(--glow); transform: scale(1.02); }
+.mkt .mkt-btn-ghost { background: rgba(245, 240, 235, 0.1); color: var(--paper); }
+.mkt-btn-ghost:hover { background: rgba(245, 240, 235, 0.2); }
+.mkt-btn-full { width: 100%; }
+
+/* ---- Layout primitives -------------------------------------------------- */
+.mkt-section { position: relative; z-index: 1; padding: 96px 24px; }
+.mkt-wrap { max-width: 1100px; margin: 0 auto; }
+.mkt-wrap-narrow { max-width: 760px; margin: 0 auto; }
+.mkt-eyebrow { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--purple); }
+.mkt-h2 { font-weight: 600; font-size: clamp(28px, 4vw, 40px); line-height: 1.15; color: var(--paper); }
+.mkt-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--warm-gray); }
+
+.mkt-card {
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--mkt-border);
+  border-radius: 16px;
+  padding: 32px;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.mkt-card:hover { border-color: var(--purple-soft); box-shadow: var(--card-shadow); transform: translateY(-6px); }
+
+/* ---- Hero -------------------------------------------------------------- */
+.mkt-hero { min-height: 92vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 24px; }
+.mkt-hero h1 {
+  font-weight: 700;
+  font-size: clamp(3rem, 8vw, 6rem);
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: var(--paper);
+  max-width: 14ch;
+}
+.mkt-hero-sub { margin: 24px auto 0; font-size: 18px; line-height: 1.6; color: rgba(245, 240, 235, 0.85); max-width: 34em; }
+.mkt-hero-cta { margin-top: 40px; }
+.mkt-hero-foot { margin-top: 16px; font-size: 14px; color: var(--warm-gray); }
+.mkt-scroll { margin-top: 64px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.mkt-scroll-line { width: 1px; height: 32px; background: var(--purple); animation: mkt-scroll 2s ease-in-out infinite; }
+
+/* ---- Grids ------------------------------------------------------------- */
+.mkt-grid-3 { margin-top: 48px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.mkt-grid-4 { margin-top: 64px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; }
+.mkt-feature h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; color: var(--paper); }
+.mkt-feature p, .mkt-step p { font-size: 14px; line-height: 1.6; color: var(--warm-gray); margin: 0; }
+.mkt-feature-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(123, 97, 255, 0.12); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.mkt-feature-icon svg { color: var(--purple); }
+
+/* ---- Steps timeline ---------------------------------------------------- */
+.mkt-step { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.mkt-step-node { width: 64px; height: 64px; border-radius: 999px; border: 2px solid var(--purple); background: var(--deep-void); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: var(--glow); }
+.mkt-step-node svg { color: var(--purple); }
+.mkt-step h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 18px; margin: 8px 0 8px; color: var(--paper); }
+
+/* ---- Pricing ----------------------------------------------------------- */
+.mkt-price-card { display: flex; flex-direction: column; }
+.mkt-price-card.featured { border: 2px solid var(--purple); box-shadow: var(--card-shadow); }
+.mkt-price-popular { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px; color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.mkt-price-amount { margin-top: 12px; display: flex; align-items: baseline; gap: 4px; }
+.mkt-price-amount strong { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; color: var(--paper); }
+.mkt-price-amount span { font-size: 14px; color: var(--warm-gray); }
+.mkt-price-desc { margin-top: 12px; font-size: 14px; color: var(--warm-gray); }
+.mkt-price-list { list-style: none; margin: 24px 0; padding: 0; display: grid; gap: 12px; }
+.mkt-price-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: rgba(245, 240, 235, 0.8); }
+.mkt-price-list svg { color: var(--green); flex: 0 0 auto; margin-top: 2px; }
+.mkt-price-card .mkt-btn { margin-top: auto; height: 48px; border-radius: 12px; }
+
+/* ---- FAQ --------------------------------------------------------------- */
+.mkt-faq-list { display: grid; gap: 12px; }
+.mkt-faq-item { border: 1px solid var(--mkt-border); border-radius: 14px; background: var(--deep-void); transition: border-color 0.3s, background 0.3s, box-shadow 0.3s; overflow: hidden; }
+.mkt-faq-item[open] { background: #13131a; border-color: rgba(123, 97, 255, 0.3); box-shadow: var(--card-shadow); }
+.mkt-faq-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; font-weight: 600; font-size: 16px; color: var(--paper); }
+.mkt-faq-item summary::-webkit-details-marker { display: none; }
+.mkt-faq-item[open] summary { color: var(--purple); }
+.mkt-faq-item summary svg { flex: 0 0 auto; color: rgba(245, 240, 235, 0.6); transition: transform 0.3s, color 0.3s; }
+.mkt-faq-item[open] summary svg { transform: rotate(180deg); color: var(--purple); }
+.mkt-faq-answer { padding: 0 24px 20px; font-size: 14px; line-height: 1.65; color: rgba(245, 240, 235, 0.8); }
+
+/* ---- Footer ------------------------------------------------------------ */
+.mkt-footer { position: relative; z-index: 1; background: var(--void); border-top: 1px solid rgba(245, 240, 235, 0.08); }
+.mkt-footer-inner { max-width: 1100px; margin: 0 auto; padding: 64px 24px 40px; }
+.mkt-footer-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 32px; }
+.mkt-footer-brand { display: flex; align-items: center; gap: 12px; }
+.mkt-footer-brand svg { color: var(--purple); }
+.mkt-footer-brand strong { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--paper); }
+.mkt-footer-brand p { margin: 4px 0 0; font-size: 14px; color: var(--warm-gray); }
+.mkt-footer-nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.mkt-footer-nav a { font-size: 14px; color: var(--paper); transition: color 0.2s; min-height: 44px; display: inline-flex; align-items: center; }
+.mkt-footer-nav a:hover { color: var(--purple); }
+.mkt-footer-copy { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warm-gray); }
+.mkt-footer-legal { margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(245, 240, 235, 0.05); }
+.mkt-footer-legal p { font-size: 12px; line-height: 1.7; color: rgba(138, 129, 120, 0.7); max-width: 64em; margin: 0; }
+
+/* ---- Long-form (legal/about) ------------------------------------------- */
+.mkt-prose h1 { font-weight: 700; font-size: clamp(32px, 5vw, 44px); letter-spacing: -0.01em; color: var(--paper); margin-bottom: 8px; }
+.mkt-prose .mkt-updated { color: var(--warm-gray); font-size: 13px; margin-bottom: 40px; }
+.mkt-prose h2 { font-weight: 600; font-size: 22px; color: var(--paper); margin: 36px 0 12px; }
+.mkt-prose p, .mkt-prose li { font-size: 15px; line-height: 1.7; color: rgba(245, 240, 235, 0.82); }
+.mkt-prose ul { padding-left: 20px; display: grid; gap: 6px; }
+.mkt-prose a { color: var(--purple); }
+
+/* ---- Page hero band (for sub-pages) ------------------------------------ */
+.mkt-page-hero { padding-top: 140px; text-align: center; }
+.mkt-page-hero h1 { font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem); letter-spacing: -0.02em; line-height: 1; text-transform: uppercase; color: var(--paper); }
+.mkt-page-hero p { margin: 20px auto 0; font-size: 18px; color: rgba(245, 240, 235, 0.85); max-width: 36em; line-height: 1.55; }
+
+/* ---- Contact form ------------------------------------------------------ */
+.mkt-form { display: grid; gap: 16px; max-width: 520px; margin: 40px auto 0; }
+.mkt-form label { font-size: 13px; font-weight: 600; color: rgba(245, 240, 235, 0.7); display: grid; gap: 6px; }
+.mkt-form input, .mkt-form textarea {
+  background: rgba(245, 240, 235, 0.05);
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
+  color: var(--paper);
+  font: inherit;
+  padding: 12px 14px;
+  min-height: 48px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.mkt-form textarea { min-height: 130px; resize: vertical; }
+.mkt-form input:focus, .mkt-form textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(123, 97, 255, 0.15); }
+
+/* ---- Animations -------------------------------------------------------- */
+@keyframes mkt-scroll { 0%, 100% { height: 20px; opacity: 0.5; } 50% { height: 40px; opacity: 1; } }
+
+.mkt-reveal { opacity: 0; transform: translateY(20px); animation: mkt-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes mkt-rise { to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt *, .mkt *::before, .mkt *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .mkt-reveal { opacity: 1; transform: none; animation: none; }
+}
+
+/* ---- Responsive -------------------------------------------------------- */
+@media (max-width: 860px) {
+  .mkt-nav-links { display: none; }
+  .mkt-menu-btn { display: inline-flex; }
+  .mkt-mobile-menu.open { display: block; background: rgba(10, 10, 15, 0.95); border-top: 1px solid rgba(245, 240, 235, 0.05); padding: 16px 24px; }
+  .mkt-mobile-menu.open a { display: block; padding: 12px 0; color: rgba(245, 240, 235, 0.85); min-height: 44px; }
+  .mkt-grid-3, .mkt-grid-4 { grid-template-columns: minmax(0, 1fr); }
+  .mkt-section { padding: 64px 20px; }
+  .mkt-footer-top { flex-direction: column; align-items: flex-start; }
+}
+
+/* Full-bleed: the marketing shell escapes the app's centered .container, and
+   the workspace safety stamp never shows on a marketing surface. */
+.container:has(.mkt) { margin: 0; max-width: none; padding: 0; }
+.container:has(.mkt) ~ .bootstrap-audit-stamp { display: none; }
+
+/* ---- Sub-page helpers (how-it-works / about / contact) ------------------ */
+.mkt-accent { color: var(--purple); }
+.mkt-grid-2 { margin-top: 48px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.mkt-step-card { position: relative; }
+.mkt-step-card .mkt-step-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.mkt-step-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 44px; color: rgba(245, 240, 235, 0.06); line-height: 1; user-select: none; }
+.mkt-step-card h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 20px; color: var(--paper); margin: 0 0 12px; }
+.mkt-step-card p { font-size: 14px; line-height: 1.6; color: var(--warm-gray); margin: 0; }
+.mkt-icon-box { width: 48px; height: 48px; border-radius: 12px; background: rgba(123, 97, 255, 0.1); border: 1px solid rgba(123, 97, 255, 0.2); display: inline-flex; align-items: center; justify-content: center; }
+.mkt-icon-box svg { color: var(--purple); }
+.mkt-shot { margin-top: 24px; border-radius: 12px; background: rgba(245, 240, 235, 0.03); border: 1px solid rgba(245, 240, 235, 0.06); height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: rgba(138, 129, 120, 0.5); }
+.mkt-trust-card h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 18px; color: var(--paper); margin: 16px 0 12px; }
+.mkt-trust-card p { font-size: 14px; line-height: 1.6; color: var(--warm-gray); margin: 0; }
+
+.mkt-cta-band { text-align: center; padding: 80px 24px; }
+.mkt-cta-band h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(28px, 4vw, 40px); color: var(--paper); margin: 0 0 12px; }
+.mkt-cta-band p { color: var(--warm-gray); font-size: 16px; margin: 0 0 28px; }
+
+.mkt-about-statement { max-width: 720px; margin: 0 auto; text-align: center; }
+.mkt-about-statement p { font-size: 18px; line-height: 1.7; color: rgba(245, 240, 235, 0.85); }
+
+@media (max-width: 860px) { .mkt-grid-2 { grid-template-columns: minmax(0, 1fr); } }

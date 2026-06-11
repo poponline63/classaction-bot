@@ -1,257 +1,186 @@
-// Public marketing homepage (DESIGN.md §6). Anonymous visitors to / land
-// here; the signed-in dashboard stays at /. Marketing register, but every
-// claim of capability stays inside the product's legal guardrails: possible
-// matches, user approval, no guarantees.
+// Public marketing homepage — Kimi "Never Miss A Settlement" design ported
+// into the live app. Standalone marketing chrome (MktShell); every capability
+// claim stays inside the product's legal guardrails.
 
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
   ArrowRight,
-  CheckCircle2,
-  FileSearch,
+  Check,
+  FileCheck2,
+  LinkIcon,
   ListChecks,
-  LockKeyhole,
-  ReceiptText,
-  ShieldCheck,
-  UserRoundCheck,
+  ScanSearch,
+  Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { count } from 'drizzle-orm';
 import { db, schema } from '@db/client';
 import { FREE_MONTHLY_CLAIM_LIMIT } from '@lib/billing/entitlements';
+import MktShell from '../_marketing/MktShell';
+import MktFaq, { type FaqItem } from '../_marketing/MktFaq';
 import IdentityTokenRedirect from './IdentityTokenRedirect';
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'ClaimBot — Class action settlements you may qualify for',
+  title: 'ClaimBot — Never miss a settlement',
   description:
-    'Tell ClaimBot a few facts. It finds class action settlements you may qualify for and prepares the easy filings for your approval — free for your first claims every month.',
+    'Find and file class-action claims you didn’t know you had. ClaimBot scans open settlements against your facts and prepares the easy filings for your approval. Free to start.',
 };
 
-async function liveCounts() {
+async function settlementCount(): Promise<string> {
   try {
-    const [settlements] = await db.select({ n: count() }).from(schema.settlements);
-    const [claims] = await db.select({ n: count() }).from(schema.claims);
-    return {
-      settlements: settlements?.n ?? null,
-      claims: claims?.n ?? null,
-    };
+    const [row] = await db.select({ n: count() }).from(schema.settlements);
+    return row?.n && row.n > 0 ? row.n.toLocaleString('en-US') : 'thousands of';
   } catch {
-    return { settlements: null, claims: null };
+    return 'thousands of';
   }
 }
 
-const steps = [
+const features = [
   {
-    icon: UserRoundCheck,
-    title: 'Add a few facts',
-    body: 'Name, contact, and the products or services you actually use. Two minutes, no documents required to start.',
+    icon: ScanSearch,
+    title: 'Automatic Scan',
+    body: 'We monitor open class-action settlements across federal and state courts. If your saved facts fit, we surface the possible match.',
   },
   {
-    icon: FileSearch,
-    title: 'See possible matches',
-    body: 'ClaimBot compares your facts against open class action settlements and shows what you may qualify for — and why.',
+    icon: FileCheck2,
+    title: 'Zero-Proof Filing',
+    body: 'Many smaller settlements need no receipts. For those, ClaimBot can prepare the claim from the facts you provide — you approve it.',
   },
   {
-    icon: ListChecks,
-    title: 'Approve and track',
-    body: 'You choose which claim types ClaimBot may handle. Approved filings are prepared and tracked from one place.',
+    icon: Wallet,
+    title: 'Payout Tracking',
+    body: 'Follow every filed claim from submission to status, all in one place. Proof-required claims always stay in your hands.',
   },
 ];
 
-const trustCards = [
+const steps = [
+  { icon: LinkIcon, n: 1, title: 'Add Your Facts', body: 'Tell ClaimBot a few things about you and what you buy — two minutes, no documents to start.' },
+  { icon: ScanSearch, n: 2, title: 'AI Scan', body: 'We cross-reference open settlements against your facts and show what you may qualify for, and why.' },
+  { icon: FileCheck2, n: 3, title: 'Approve & File', body: 'You choose which claim types ClaimBot may handle. It prepares and files the ones you approve.' },
+  { icon: ListChecks, n: 4, title: 'Track Payouts', body: 'Watch each claim move through the workflow. We keep a full record of every action taken.' },
+];
+
+const plans = [
   {
-    icon: LockKeyhole,
-    title: 'Permission per claim type',
-    body: 'ClaimBot never acts on a category you have not explicitly allowed. Revoke any permission at any time.',
+    label: 'Scan Only', name: 'Free', price: '$0', period: '',
+    desc: 'See possible matches and file on your own.', featured: false,
+    features: ['Unlimited matching and review', `${FREE_MONTHLY_CLAIM_LIMIT} guarded filings per month`, 'Eligibility checker', 'Alerts for new matches'],
   },
   {
-    icon: ShieldCheck,
-    title: 'Proof stays in your hands',
-    body: 'Settlements that require receipts or documents always pause for your manual review. Nothing is invented on your behalf.',
+    label: 'Auto-File', name: 'Plus', price: '$9', period: '/mo',
+    desc: 'Everything in Free, plus hands-off filing.', featured: true,
+    features: ['Everything in Free', 'Automatic guarded filing', 'Saved profile & reminders', 'Priority match alerts', 'Payout tracking dashboard'],
   },
   {
-    icon: ReceiptText,
-    title: 'Every action receipted',
-    body: 'Each step ClaimBot takes is written to your private audit log before it happens — review the full history any time.',
+    label: 'Full Automation', name: 'Pro', price: '$19', period: '/mo',
+    desc: 'Everything in Plus, uncapped, with priority.', featured: false,
+    features: ['Everything in Plus', 'No monthly filing cap', 'Priority filing queue', 'Advanced payout tracking', 'Dedicated support'],
   },
+];
+
+const faqs: FaqItem[] = [
+  { q: 'Is my data safe with ClaimBot?', a: 'Your information is used only to find and prepare claims you approve, and it’s never sold. ClaimBot works from the facts you provide and keeps a private, append-only record of every action taken on your account.' },
+  { q: 'How does ClaimBot make money?', a: 'A simple subscription for the automated filing service. We do NOT take a percentage of your settlement payouts. Free users can browse possible matches and file on their own at no cost.' },
+  { q: 'What proof do I need to file a claim?', a: 'Many smaller settlements require no proof of purchase — just basic contact information. Settlements that do require receipts or documents always pause for your manual review; ClaimBot never invents proof on your behalf.' },
+  { q: 'How long until I receive a payout?', a: 'Settlement checks are issued by the settlement administrators, not ClaimBot, and timing varies by case and court approval. ClaimBot tracks each claim’s status so you can follow it, but we can’t guarantee amounts or timing.' },
+  { q: 'What if I don’t qualify for a settlement?', a: 'ClaimBot only surfaces possible matches based on the facts you save. If your facts don’t fit, it won’t show the settlement — you only review claims that look like a fit.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Cancel any time with no cancellation fees. You keep access through the end of your billing period, then revert to the Free plan.' },
 ];
 
 export default async function WelcomePage() {
-  const counts = await liveCounts();
-  const settlementCount = counts.settlements != null && counts.settlements > 0
-    ? counts.settlements.toLocaleString('en-US')
-    : '250+';
+  const settlements = await settlementCount();
 
   return (
-    <div className="welcome-page">
+    <MktShell>
       <IdentityTokenRedirect />
-      <header className="welcome-nav" aria-label="ClaimBot">
-        <Link className="welcome-brand" href="/welcome">
-          <ShieldCheck aria-hidden="true" size={22} />
-          <span>ClaimBot</span>
-        </Link>
-        <nav className="welcome-nav-links" aria-label="Public navigation">
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/help">Help</Link>
-          <Link className="welcome-nav-signin" href="/login">Sign in</Link>
-        </nav>
-      </header>
-
-      <main>
-        <section className="welcome-hero" aria-label="What ClaimBot does">
-          <div className="welcome-hero-copy">
-            <h1>Money from class actions you never knew you were part of.</h1>
-            <p>
-              Tell ClaimBot a few facts. It finds settlements you may qualify for and
-              prepares the easy filings for your approval — free for your first
-              {' '}{FREE_MONTHLY_CLAIM_LIMIT} claims every month.
-            </p>
-            <div className="welcome-hero-actions">
-              <Link className="btn lg" href="/login?signup=1">
-                Check what you qualify for
-                <ArrowRight aria-hidden="true" size={18} />
-              </Link>
-              <a className="btn ghost lg" href="#how-it-works">How it works</a>
-            </div>
-            <span className="welcome-hero-footnote">
-              Free to start. No card required. You approve every claim.
-            </span>
-          </div>
-
-          <div className="welcome-hero-visual" aria-hidden="true">
-            <div className="welcome-mock">
-              <div className="welcome-mock-bar">
-                <i /><i /><i />
-              </div>
-              <div className="welcome-mock-body">
-                <div className="welcome-mock-row">
-                  <strong>Possible matches</strong>
-                  <span className="welcome-mock-chip good">3 ready to review</span>
-                </div>
-                <div className="welcome-mock-card">
-                  <span>Wireless earbuds settlement</span>
-                  <em>You may qualify · no proof needed</em>
-                </div>
-                <div className="welcome-mock-card">
-                  <span>Data breach notice 2024</span>
-                  <em>You may qualify · email matched</em>
-                </div>
-                <div className="welcome-mock-card muted">
-                  <span>Grocery label settlement</span>
-                  <em>Needs one receipt · stays manual</em>
-                </div>
-                <div className="welcome-mock-cta">Review matches</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="welcome-proof" aria-label="ClaimBot by the numbers">
-          <div>
-            <strong>{settlementCount}</strong>
-            <span>Open settlements tracked and refreshed daily</span>
-          </div>
-          <div>
-            <strong>{FREE_MONTHLY_CLAIM_LIMIT}/mo</strong>
-            <span>Guarded filings included on the free plan</span>
-          </div>
-          <div>
-            <strong>100%</strong>
-            <span>Of filings reviewed against your approvals before anything moves</span>
-          </div>
-        </section>
-
-        <section className="welcome-steps" id="how-it-works" aria-label="How ClaimBot works">
-          <div className="welcome-section-head">
-            <h2>Three steps. You stay in charge of all of them.</h2>
-            <p>ClaimBot does the searching and the paperwork; every decision stays yours.</p>
-          </div>
-          <div className="welcome-steps-grid">
-            {steps.map((step, index) => (
-              <article className="welcome-step-card" key={step.title}>
-                <span className="welcome-step-num" aria-hidden="true">{index + 1}</span>
-                <step.icon aria-hidden="true" size={22} />
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="welcome-trust" aria-label="Safety boundaries">
-          <div className="welcome-section-head">
-            <h2>Nothing is filed without you.</h2>
-            <p>
-              ClaimBot is built around explicit permission, manual proof, and a full
-              audit trail — not blind automation.
-            </p>
-          </div>
-          <div className="welcome-trust-grid">
-            {trustCards.map((card) => (
-              <article className="welcome-trust-card" key={card.title}>
-                <card.icon aria-hidden="true" size={20} />
-                <h3>{card.title}</h3>
-                <p>{card.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="welcome-pricing" aria-label="Pricing summary">
-          <div className="welcome-section-head">
-            <h2>Honest pricing, visible up front.</h2>
-            <p>Matching and review are always free. Paid plans remove the monthly filing cap.</p>
-          </div>
-          <div className="welcome-pricing-grid">
-            <article className="welcome-price-card">
-              <span className="welcome-price-plan">Free</span>
-              <strong>$0</strong>
-              <ul>
-                <li><CheckCircle2 aria-hidden="true" size={16} /> Unlimited matching and review</li>
-                <li><CheckCircle2 aria-hidden="true" size={16} /> {FREE_MONTHLY_CLAIM_LIMIT} guarded filings per month</li>
-                <li><CheckCircle2 aria-hidden="true" size={16} /> Full audit history</li>
-              </ul>
-              <Link className="btn ghost full" href="/login?signup=1">Start free</Link>
-            </article>
-            <article className="welcome-price-card featured">
-              <span className="welcome-price-plan">Paid plans</span>
-              <strong>From $29<small>/yr</small></strong>
-              <ul>
-                <li><CheckCircle2 aria-hidden="true" size={16} /> Everything in Free</li>
-                <li><CheckCircle2 aria-hidden="true" size={16} /> No monthly filing cap</li>
-                <li><CheckCircle2 aria-hidden="true" size={16} /> Saved profiles, reminders, prefill</li>
-              </ul>
-              <Link className="btn full" href="/pricing">Compare plans</Link>
-            </article>
-          </div>
-        </section>
-
-        <section className="welcome-final" aria-label="Get started">
-          <h2>Find out what you may be owed.</h2>
-          <p>It takes about two minutes to add your facts and see possible matches.</p>
-          <Link className="btn lg" href="/login?signup=1">
-            Check what you qualify for
-            <ArrowRight aria-hidden="true" size={18} />
-          </Link>
-        </section>
-      </main>
-
-      <footer className="welcome-footer" aria-label="Legal">
-        <p>
-          ClaimBot is not a law firm and does not provide legal advice. It does not
-          guarantee eligibility, approval, payout amounts, or payout timing. Matches
-          are possibilities based on facts you provide; settlement administrators
-          make all final decisions. Proof-required claims always remain manual.
+      {/* Hero */}
+      <section className="mkt-hero">
+        <h1>Never Miss A Settlement</h1>
+        <p className="mkt-hero-sub">
+          Find and file claims you didn&rsquo;t know you had. Automated. Zero upfront cost.
         </p>
-        <nav aria-label="Legal pages">
-          <Link href="/terms">Terms</Link>
-          <Link href="/privacy-policy">Privacy</Link>
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/contact">Contact</Link>
-        </nav>
-        <span>© {new Date().getFullYear()} ClaimBot</span>
-      </footer>
-    </div>
+        <Link className="mkt-btn mkt-btn-light mkt-hero-cta" href="/login?signup=1">
+          Check What You Qualify For
+          <ArrowRight size={20} aria-hidden="true" />
+        </Link>
+        <p className="mkt-hero-foot">Free to start. No card required. You approve every claim.</p>
+        <div className="mkt-scroll" aria-hidden="true">
+          <span className="mkt-mono">Scroll to enter</span>
+          <span className="mkt-scroll-line" />
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="mkt-section">
+        <div className="mkt-wrap">
+          <span className="mkt-eyebrow">Settlement Velocity</span>
+          <h2 className="mkt-h2" style={{ marginTop: 12 }}>{settlements} active settlements. One scan.</h2>
+          <div className="mkt-grid-3">
+            {features.map((f) => (
+              <article className="mkt-card mkt-feature mkt-reveal" key={f.title}>
+                <span className="mkt-feature-icon"><f.icon size={22} aria-hidden="true" /></span>
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="mkt-section" id="how-it-works">
+        <div className="mkt-wrap">
+          <h2 className="mkt-h2" style={{ textAlign: 'center' }}>From facts to filed claims, on autopilot.</h2>
+          <div className="mkt-grid-4">
+            {steps.map((s) => (
+              <div className="mkt-step mkt-reveal" key={s.n}>
+                <span className="mkt-step-node"><s.icon size={24} aria-hidden="true" /></span>
+                <span className="mkt-mono" style={{ color: 'var(--purple)' }}>Step {s.n}</span>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="mkt-section" id="pricing">
+        <div className="mkt-wrap">
+          <h2 className="mkt-h2" style={{ textAlign: 'center' }}>No hidden fees. Ever.</h2>
+          <div className="mkt-grid-3">
+            {plans.map((p) => (
+              <article className={`mkt-card mkt-price-card mkt-reveal ${p.featured ? 'featured' : ''}`} key={p.name}>
+                {p.featured && (
+                  <span className="mkt-price-popular"><Sparkles size={14} aria-hidden="true" /> Most Popular</span>
+                )}
+                <span className="mkt-mono">{p.label}</span>
+                <div className="mkt-price-amount"><strong>{p.price}</strong><span>{p.period}</span></div>
+                <p className="mkt-price-desc">{p.desc}</p>
+                <ul className="mkt-price-list">
+                  {p.features.map((feat) => (
+                    <li key={feat}><Check size={16} aria-hidden="true" />{feat}</li>
+                  ))}
+                </ul>
+                <Link className={`mkt-btn mkt-btn-full ${p.featured ? 'mkt-btn-purple' : 'mkt-btn-ghost'}`} href="/login?signup=1">
+                  Get Started
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mkt-section" id="faq">
+        <div className="mkt-wrap-narrow">
+          <h2 className="mkt-h2" style={{ textAlign: 'center', marginBottom: 40 }}>Frequently asked questions</h2>
+          <MktFaq items={faqs} />
+        </div>
+      </section>
+    </MktShell>
   );
 }

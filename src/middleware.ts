@@ -27,6 +27,9 @@ const productionCsp = [
 const publicPathPrefixes = [
   '/_next/',
   '/welcome',
+  '/how-it-works',
+  '/faq',
+  '/about',
   '/login',
   '/pricing',
   '/help',

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckCircle2, Clock3, FileCheck2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import type { ClientFeatureFlag } from '@lib/features';
+import { isMarketingPath } from '@lib/marketing-routes';
 
 type LockupTone = 'building' | 'needs' | 'review' | 'locked' | 'packaged';
 
@@ -135,7 +136,7 @@ export default function ClaimStatusLockup({
 }) {
   const pathname = usePathname();
   // The public marketing homepage carries no workspace status chrome.
-  if (pathname.startsWith('/welcome')) return null;
+  if (isMarketingPath(pathname)) return null;
   const state = getState(pathname, featureEnabled(featureFlags, 'settlement-search'));
   const Icon = state.tone === 'locked'
     ? LockKeyhole

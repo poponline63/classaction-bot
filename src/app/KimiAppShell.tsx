@@ -36,6 +36,7 @@ import MobileBottomNav from './MobileBottomNav';
 import PwaConnectionStatus from './PwaConnectionStatus';
 import AppFooter from './AppFooter';
 import CommandPalette from './CommandPalette';
+import { isMarketingPath } from '@lib/marketing-routes';
 
 type FilingMode = 'shadow' | 'live';
 type IdentityUser = {
@@ -175,9 +176,10 @@ export default function KimiAppShell({
     };
   }, []);
 
-  // The public marketing homepage renders its own chrome; skip the workspace
-  // shell entirely. (Placed after every hook so hook order stays stable.)
-  if (pathname.startsWith('/welcome')) {
+  // Public marketing pages render their own standalone chrome; skip the
+  // workspace shell entirely. (Placed after every hook so hook order stays
+  // stable.)
+  if (isMarketingPath(pathname)) {
     return <>{children}</>;
   }
 

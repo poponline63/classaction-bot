@@ -1,4 +1,5 @@
 import './globals.css';
+import './marketing.css';
 import type { Metadata, Viewport } from 'next';
 import { effectiveFilingModeForBootstrap, getBootstrapAuditStamp } from '@lib/bootstrap-audit-stamp';
 import { getPublicClientFeatureFlags } from '@lib/features';
