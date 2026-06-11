@@ -4,7 +4,7 @@
 // into the Next.js app. React-18 / @react-three/fiber@8 compatible. Rendered
 // client-side only (loaded via MktBackground with ssr:false) and gated on
 // prefers-reduced-motion so it never blocks first paint or SEO.
-import { useRef, useMemo, useEffect, Suspense } from 'react';
+import { useRef, useMemo, useEffect, useState, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -32,7 +32,8 @@ function SpeedParticles({ count = 2000 }: { count?: number }) {
 
   useMemo(() => {
     for (let i = 0; i < count; i++) {
-      speedsRef.current[i] = 8 + Math.random() * 12;
+      // Calmer drift — roughly half the original streaking speed.
+      speedsRef.current[i] = 3.5 + Math.random() * 5;
     }
   }, [count]);
 
@@ -273,7 +274,7 @@ function PostProcessing() {
   return (
     <EffectComposer>
       <Bloom
-        intensity={0.8}
+        intensity={0.55}
         luminanceThreshold={0.2}
         luminanceSmoothing={0.9}
         mipmapBlur
@@ -297,24 +298,24 @@ function Scene() {
       <fog attach="fog" args={['#050508', 5, 35]} />
       <CameraController />
 
-      {/* Three depth layers */}
+      {/* Three depth layers — slowed for a calmer, more ambient drift. */}
       <ConveyorCards
         layerScale={1}
-        speedMultiplier={1}
+        speedMultiplier={0.5}
         zRange={[-30, 8]}
         laneSpread={4}
         cardOpacity={0.95}
       />
       <ConveyorCards
         layerScale={0.85}
-        speedMultiplier={0.75}
+        speedMultiplier={0.38}
         zRange={[-35, 2]}
         laneSpread={5}
         cardOpacity={0.6}
       />
       <ConveyorCards
         layerScale={0.6}
-        speedMultiplier={0.4}
+        speedMultiplier={0.22}
         zRange={[-50, -15]}
         laneSpread={6}
         cardOpacity={0.3}
@@ -335,6 +336,13 @@ function Scene() {
 
 // ─── Main Export ───
 export default function DocumentTunnel() {
+  // Ease the scene in rather than snapping on, so the motion arrives gently.
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => setShown(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div
       style={{
@@ -345,6 +353,8 @@ export default function DocumentTunnel() {
         height: '100%',
         zIndex: 0,
         pointerEvents: 'none',
+        opacity: shown ? 1 : 0,
+        transition: 'opacity 2.8s ease-out',
       }}
       aria-hidden="true"
     >
