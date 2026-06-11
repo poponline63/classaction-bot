@@ -57,3 +57,6 @@ next-env.d.ts
 
 # drizzle (keep /drizzle/migrations tracked)
 /drizzle/*.db*
+
+# private strategy / design working docs (never publish — repo is public)
+/private-strategy
